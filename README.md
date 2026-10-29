@@ -97,3 +97,10 @@ tests/*.test.mjs         Node.js automated tests
 ```
 
 MIT license. See `LICENSE`.
+
+## Contributing and project history
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution process and
+[CHANGELOG.md](CHANGELOG.md) for changes recorded in this repository. The
+initial repository commit imports the supplied 0.1.0 source archive; earlier
+development history was not included in that archive.
