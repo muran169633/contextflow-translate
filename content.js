@@ -261,7 +261,7 @@
   }
 
   async function processParagraphs(items, token) {
-    const publicService = ["mymemory", "google-web"].includes(state.engine?.provider);
+    const publicService = ["mymemory", "google-web", "youdao"].includes(state.engine?.provider);
     if (publicService) await processPublicParagraphs(items, token);
     else for (let index = 0; index < items.length;) {
       if (state.stop || state.token !== token) break;
@@ -338,7 +338,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 6, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 7, running: state.running, count: state.total});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});

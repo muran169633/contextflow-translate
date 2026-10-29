@@ -2,6 +2,8 @@
 export const DEFAULT_SETTINGS = Object.freeze({
   aiProvider: "compatible",
   googleTranslateKey: "",
+  youdaoAppKey: "",
+  youdaoAppSecret: "",
   endpoint: "https://api.openai.com/v1",
   apiKey: "",
   model: "",

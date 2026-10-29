@@ -1,6 +1,6 @@
 # ContextFlow Translate 0.1.0
 
-A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Google Cloud Translation, or your own AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Youdao Cloud Translation, Google Cloud Translation, or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
@@ -11,10 +11,12 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
   Availability and quality depend on the language pair and the provider.
 - An optional Google Translate web endpoint that needs no API key. This is an
   unofficial integration and can be rate-limited, changed, or unavailable.
+- Youdao Cloud text translation with an application ID and secret; trial credit
+  may be available and subsequent use may be charged.
 - Google Cloud Translation Basic for standard translation without an LLM; a
   Google Cloud API key and billing account are required.
 - AI translation in groups of five paragraphs, including title, article opening
-  and adjacent-paragraph context. MyMemory and the Google web endpoint send
+  and adjacent-paragraph context. MyMemory, Youdao, and the Google web endpoint send
   paragraphs individually, with up to three paragraphs in flight.
 - OpenAI-compatible `chat/completions` API with an arbitrary HTTPS base URL, including many personal API gateways; local HTTP model servers on `localhost` / `127.0.0.1`.
 - Native Google Gemini `generateContent` and Anthropic Claude Messages APIs.
@@ -66,6 +68,16 @@ it is not a documented or supported Google Cloud API. Its availability, rate
 limits and future behavior are not guaranteed. It sends the selected text to
 Google in the request URL and does not apply AI context, glossary or review.
 The extension will report failures rather than silently switch services.
+
+### 网易有道智云
+
+1. 在[有道智云](https://ai.youdao.com/new/product-fanyi-text.s)注册账号，创建应用并绑定文本翻译服务，获取应用 ID 和应用密钥。体验额度及后续费用以有道账户和当前定价为准。
+2. 打开扩展的 **设置**，填写有道应用 ID 和应用密钥，点击**保存有道凭据**。密钥保存在浏览器本地，未单独加密。
+3. 回到扩展弹窗，在翻译服务中选择 **网易有道智云**，选择源语言和目标语言，点击**翻译网页**，并允许访问有道域名。
+
+有道模式不需要配置 AI 模型。网页文字会发送到有道，语种组合的可用性由服务决定；失败时显示错误码。长段落会拆分处理，最多并发三个段落。扩展不会自动切换到其他服务。
+
+### Google Cloud Translation
 
 To use Google Cloud Translation, create a Google Cloud project with the
 [Translation API enabled](https://docs.cloud.google.com/translate/docs/setup),
@@ -145,6 +157,8 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
   Cloud; the separate API key is stored locally in the browser profile.
 - When using the unofficial Google Translate web endpoint, selected text is sent
   to Google in request URLs, which can be logged by servers and network tools.
+- When using Youdao, selected passages are sent to Youdao Cloud. The application
+  ID and secret are stored locally; requests are signed in the background.
 - When using AI mode, selected passages, document title, surrounding context, and glossary terms go to **your configured AI provider**.
 - Credentials are stored in `chrome.storage.local`, accessible to trusted extension pages and the background worker, not directly to the webpage. **Local storage is not encrypted with a separate application password**; protect your OS account and Chrome profile.
 - Access to the selected provider's API origin is requested at runtime, not to every visited website. The extension uses `activeTab` permission for the open webpage.
@@ -153,7 +167,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Avoid feeding confidential, medical, financial, or private enterprise content to unknown API relays. The optional cache stores translated passages locally for seven days.
 - Stopping prevents new paragraphs from starting, but already-sent paragraphs
   may continue making requests for their remaining segments and consume quota
-  or incur charges. Up to three paragraphs may be in flight for MyMemory and
+  or incur charges. Up to three paragraphs may be in flight for MyMemory, Youdao, and
   the unofficial Google web endpoint.
 
 ## Known limitations
@@ -163,7 +177,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Complex page layouts can still render overlays imperfectly; text extraction may select unwanted items or miss nonstandard blocks.
 - Translation quality depends on the configured model, prompt, glossary and source text. **No benchmark has established superiority to any other extension**.
 - The second-pass review can help but cannot guarantee correctness and uses more tokens.
-- AI and Google Cloud requests are grouped sequentially; MyMemory and the
+- AI and Google Cloud requests are grouped sequentially; MyMemory, Youdao, and the
   unofficial Google web endpoint use up to three concurrent paragraph requests.
   Requests have a 27-second timeout. Very slow local or remote LLMs may time out.
 
@@ -181,6 +195,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 popup.html/js            Click-to-translate and remove overlays
 free-translate.mjs       MyMemory translation and language choices
 google-web-translate.mjs Unofficial Google Translate web endpoint adapter
+youdao-translate.mjs      Youdao Cloud text translation adapter
 google-translate.mjs     Google Cloud Translation Basic adapter
 model-adapters.mjs       Compatible, Gemini and Claude API request adapters
 discussion.js            Read Kaggle or structured discussion data

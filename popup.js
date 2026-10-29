@@ -5,6 +5,7 @@ import {contentMessages} from "./i18n.mjs";
 import {DEFAULT_ENGINE, FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine} from "./free-translate.mjs";
 import {GOOGLE_TRANSLATE_ORIGIN} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN} from "./google-web-translate.mjs";
+import {YOUDAO_ORIGIN} from "./youdao-translate.mjs";
 const $ = id => document.getElementById(id);
 let busy = false;
 let language = "en";
@@ -13,6 +14,7 @@ let saveQueue = Promise.resolve();
 let quickSetup = Promise.resolve();
 let quickReady = false;
 let googleKeyPresent = false;
+let youdaoKeysPresent = false;
 const t = (key, values) => translate(language, key, values);
 
 function renderEngine() {
@@ -21,6 +23,7 @@ function renderEngine() {
   $("mymemory-info").hidden = engine.provider !== "mymemory";
   $("google-info").hidden = engine.provider !== "google";
   $("google-web-info").hidden = engine.provider !== "google-web";
+  $("youdao-info").hidden = engine.provider !== "youdao";
   $("ai-controls").hidden = engine.provider !== "ai";
   const names = new Intl.DisplayNames([language], {type: "language"});
   for (const [id, selected] of [["freeSource", engine.source], ["freeTarget", engine.target]]) {
@@ -53,6 +56,7 @@ async function settings() {
 async function updateSettingsPreview() {
   const data = await settings();
   googleKeyPresent = !!String(data.googleTranslateKey || "").trim();
+  youdaoKeysPresent = !!String(data.youdaoAppKey || "").trim() && !!String(data.youdaoAppSecret || "").trim();
   $("model").textContent = data.model || t("noModel");
   $("detail").textContent = `${data.target} / ${t(data.style)}${data.review ? ` / ${t("reviewOn")}` : ""}`;
 }
@@ -71,7 +75,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 6) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 7) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -105,11 +109,12 @@ async function runAction(kind) {
   if (busy) return;
   const selectedEngine = {...engine};
   let permission;
-  if (["CF_START", "CF_CONTINUE"].includes(kind) && ["mymemory", "google-web", "google"].includes(selectedEngine.provider)) {
+  if (["CF_START", "CF_CONTINUE"].includes(kind) && ["mymemory", "google-web", "google", "youdao"].includes(selectedEngine.provider)) {
     if (selectedEngine.source === selectedEngine.target) { status(t("sameLanguage"), "error"); return; }
     if (selectedEngine.provider === "google" && !googleKeyPresent) { status(t("googleNeedKey"), "error"); return; }
+    if (selectedEngine.provider === "youdao" && !youdaoKeysPresent) { status(t("youdaoNeedKey"), "error"); return; }
     // Called synchronously from the click handler to preserve the user gesture.
-    const origin = selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : selectedEngine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
+    const origin = selectedEngine.provider === "youdao" ? YOUDAO_ORIGIN : selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : selectedEngine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
     permission = chrome.permissions.request({origins: [origin]});
   }
   busy = true;
@@ -119,11 +124,11 @@ async function runAction(kind) {
     if (["CF_START", "CF_CONTINUE"].includes(kind)) {
       const config = await settings();
       if (selectedEngine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
-      if (permission && !await permission) throw new Error(t(selectedEngine.provider === "mymemory" ? "permissionFree" : "permissionGoogle"));
+      if (permission && !await permission) throw new Error(t(selectedEngine.provider === "mymemory" ? "permissionFree" : selectedEngine.provider === "youdao" ? "permissionYoudao" : "permissionGoogle"));
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 6) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 7) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;
@@ -163,6 +168,7 @@ for (const [id, key] of [["provider", "provider"], ["freeSource", "source"], ["f
 void (async () => {
   const config = await settings();
   googleKeyPresent = !!String(config.googleTranslateKey || "").trim();
+  youdaoKeysPresent = !!String(config.youdaoAppKey || "").trim() && !!String(config.youdaoAppSecret || "").trim();
   const stored = await chrome.storage.local.get("translationEngine");
   engine = normalizeEngine(stored.translationEngine, !!config.model.trim());
   await setupLanguage(next => {

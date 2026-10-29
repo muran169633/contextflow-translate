@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 test('切换服务时隔离密钥并保留已有兼容接口配置', async () => {
   const elements = new Map();
-  for (const id of ['uiLanguage', 'message', 'aiProvider', 'endpoint', 'endpointHelp', 'model', 'apiKey', 'googleTranslateKey', 'saveGoogleKey', 'source', 'target', 'style', 'glossary', 'maxBlocks', 'review', 'cache', 'save', 'test', 'clearCache']) {
+  for (const id of ['uiLanguage', 'message', 'aiProvider', 'endpoint', 'endpointHelp', 'model', 'apiKey', 'googleTranslateKey', 'saveGoogleKey', 'youdaoAppKey', 'youdaoAppSecret', 'saveYoudaoKey', 'source', 'target', 'style', 'glossary', 'maxBlocks', 'review', 'cache', 'save', 'test', 'clearCache']) {
     elements.set(id, {value: '', checked: false, disabled: false, textContent: '', className: '', addEventListener(_event, fn) { this.handler = fn; }});
   }
   const store = {settings: {endpoint: 'https://gateway.example/v1', model: 'old-model', apiKey: 'old-key', target: 'Chinese', source: 'auto', style: 'faithful', cache: true, maxBlocks: 50}};
@@ -35,6 +35,12 @@ test('切换服务时隔离密钥并保留已有兼容接口配置', async () =>
     await elements.get('saveGoogleKey').handler();
     assert.equal(store.settings.googleTranslateKey, 'google-key');
     assert.equal(store.settings.connections.gemini.apiKey, 'new-key');
+    elements.get('youdaoAppKey').value = 'youdao-id';
+    elements.get('youdaoAppSecret').value = 'youdao-secret';
+    await elements.get('saveYoudaoKey').handler();
+    assert.equal(store.settings.youdaoAppKey, 'youdao-id');
+    assert.equal(store.settings.youdaoAppSecret, 'youdao-secret');
+    assert.equal(store.settings.googleTranslateKey, 'google-key');
   } finally {
     delete globalThis.document;
     delete globalThis.navigator;

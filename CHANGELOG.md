@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added Youdao Cloud text translation with locally stored application
+  credentials and trial-credit and pricing information.
+
 - Added an optional, no-key Google Translate web endpoint with an explicit
   unofficial-service and privacy notice.
 - Improved free-service throughput with bounded paragraph concurrency and

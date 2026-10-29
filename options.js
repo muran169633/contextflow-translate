@@ -35,6 +35,8 @@ function settingsFromForm() {
     aiProvider: currentProvider,
     connections,
     googleTranslateKey: $("googleTranslateKey").value.trim(),
+    youdaoAppKey: $("youdaoAppKey").value.trim(),
+    youdaoAppSecret: $("youdaoAppSecret").value.trim(),
     endpoint: $("endpoint").value.trim(),
     model: $("model").value.trim(),
     apiKey: $("apiKey").value.trim(),
@@ -54,7 +56,7 @@ async function restore() {
   connections = {...(s.connections || {})};
   connections[currentProvider] = {endpoint: s.endpoint, model: s.model, apiKey: s.apiKey};
   showConnection(currentProvider);
-  for (const name of ["googleTranslateKey", "source", "target", "style", "glossary", "maxBlocks"]) {
+  for (const name of ["googleTranslateKey", "youdaoAppKey", "youdaoAppSecret", "source", "target", "style", "glossary", "maxBlocks"]) {
     $(name).value = s[name];
   }
   $("review").checked = !!s.review;
@@ -95,6 +97,13 @@ $("saveGoogleKey").addEventListener("click", async () => {
     const data = await chrome.storage.local.get("settings");
     await chrome.storage.local.set({settings: {...(data.settings || {}), googleTranslateKey: $("googleTranslateKey").value.trim()}});
     status(t("googleKeySaved"), "success");
+  } catch (error) { status(String(error?.message || error), "error"); }
+});
+$("saveYoudaoKey").addEventListener("click", async () => {
+  try {
+    const data = await chrome.storage.local.get("settings");
+    await chrome.storage.local.set({settings: {...(data.settings || {}), youdaoAppKey: $("youdaoAppKey").value.trim(), youdaoAppSecret: $("youdaoAppSecret").value.trim()}});
+    status(t("youdaoKeySaved"), "success");
   } catch (error) { status(String(error?.message || error), "error"); }
 });
 $("aiProvider").addEventListener("change", () => {

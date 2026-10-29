@@ -6,6 +6,7 @@ import {
 import {FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, translateFree} from "./free-translate.mjs";
 import {GOOGLE_TRANSLATE_ORIGIN, translateGoogle} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN, translateGoogleWeb} from "./google-web-translate.mjs";
+import {YOUDAO_ORIGIN, translateYoudao} from "./youdao-translate.mjs";
 import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
 import {contentMessages, resolveLanguage, translate} from "./i18n.mjs";
 
@@ -27,12 +28,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}); } catch {}
-  if (ping?.ok && ping.protocol !== 6) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 7) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"});
-    if (!ping?.ok || ping.protocol !== 6) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 7) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}});
   return ping;
@@ -52,7 +53,8 @@ async function quickTranslate(tab) {
     if (engine.provider !== "ai" && engine.source === engine.target) throw new Error(translate(language, "sameLanguage"));
     if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error(translate(language, "needModel"));
     if (engine.provider === "google" && !String(settings.googleTranslateKey || "").trim()) throw new Error(translate(language, "googleNeedKey"));
-    const origin = engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
+    if (engine.provider === "youdao" && (!String(settings.youdaoAppKey || "").trim() || !String(settings.youdaoAppSecret || "").trim())) throw new Error(translate(language, "youdaoNeedKey"));
+    const origin = engine.provider === "youdao" ? YOUDAO_ORIGIN : engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
     if (!await chrome.permissions.contains({origins: [origin]})) throw new Error(translate(language, "quickAuthorize"));
     const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_START", preferences: {engine, target: settings.target, maxBlocks: settings.maxBlocks, messages: contentMessages(language)}});
     if (!result?.ok) throw new Error(translate(language, "quickError"));
@@ -162,12 +164,12 @@ async function storeCache(key, entries, translations, reviewed) {
 async function translationWithCache(entries, context, force = false, forceAi = false, requestedEngine = null) {
   const settings = await readSettings();
   const {translationEngine} = await chrome.storage.local.get("translationEngine");
-  if (requestedEngine && (!['mymemory', 'google-web', 'google', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
+  if (requestedEngine && (!['mymemory', 'google-web', 'google', 'youdao', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
     throw new Error("Invalid translation engine selection.");
   }
   const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(requestedEngine || translationEngine, !!String(settings.model || "").trim());
   if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
-  const url = engine.provider === "ai" ? modelEndpoint(settings) : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
+  const url = engine.provider === "ai" ? modelEndpoint(settings) : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "youdao" ? YOUDAO_ORIGIN : FREE_ORIGIN;
   const cacheInput = {version: 4, engine, texts: entries.map(entry => entry.text)};
   if (engine.provider === "ai") Object.assign(cacheInput, {
     provider: providerName(settings), endpoint: url, model: settings.model, source: settings.source,
@@ -186,10 +188,10 @@ async function translationWithCache(entries, context, force = false, forceAi = f
   let translations;
   let reviewed = false;
   let reviewWarning = "";
-  if (engine.provider === "mymemory" || engine.provider === "google-web" || engine.provider === "google") {
+  if (engine.provider === "mymemory" || engine.provider === "google-web" || engine.provider === "google" || engine.provider === "youdao") {
     try {
       if (!await chrome.permissions.contains({origins: [url]})) throw new Error("Translation provider host access is not granted.");
-      translations = engine.provider === "google" ? await translateGoogle(entries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWeb(entries, engine) : await translateFree(entries, engine);
+      translations = engine.provider === "youdao" ? await translateYoudao(entries, engine, settings.youdaoAppKey, settings.youdaoAppSecret) : engine.provider === "google" ? await translateGoogle(entries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWeb(entries, engine) : await translateFree(entries, engine);
     } catch (error) {
       error.fatal = true;
       throw error;
@@ -219,7 +221,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 6};
+      return {protocol: 7};
     }
     if (message?.type === "CF_QUICK_START") {
       if (!sender.tab) throw new Error("Quick translation must originate from a webpage.");
