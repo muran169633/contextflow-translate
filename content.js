@@ -396,7 +396,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 8, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 9, running: state.running, count: state.total});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});

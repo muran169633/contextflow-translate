@@ -15,7 +15,7 @@
     <div class="popup-intro"><div><p class="popup-overline">CONTEXTFLOW / 01</p><h2 data-i18n="workspace">Your reading companion</h2></div><span class="intro-spark">✳</span></div>
     <section class="popup-card" aria-label="Translation">
       <div class="card-heading"><div class="section-icon">↗</div><div><strong data-i18n="engineTitle">Translation engine</strong><p data-i18n="engineSubtitle">Choose how to translate</p></div></div>
-      <div class="field"><label for="provider" data-i18n="provider">Provider</label><select id="provider" disabled><option value="mymemory" data-i18n="freeProvider">MyMemory · free</option><option value="google-web" data-i18n="googleWebProvider">Google Translate · free (unofficial)</option><option value="google">Google Cloud Translation</option><option value="youdao" data-i18n="youdaoProvider">Youdao Cloud Translation</option><option value="ai" data-i18n="aiProvider">Your AI model</option></select></div>
+      <div class="field"><label for="provider" data-i18n="provider">Provider</label><select id="provider" disabled><option value="mymemory" data-i18n="freeProvider">MyMemory · free</option><option value="google-web" data-i18n="googleWebProvider">Google Translate · free (unofficial)</option><option value="google">Google Cloud Translation</option><option value="youdao" data-i18n="youdaoProvider">Youdao Cloud Translation</option><option value="microsoft" data-i18n="microsoftProvider">Microsoft Translator</option><option value="ai" data-i18n="aiProvider">Your AI model</option></select></div>
       <div id="free-controls">
         <div class="language-pair"><div class="field"><label for="freeSource" data-i18n="source">Source language</label><select id="freeSource" disabled></select></div><span class="pair-arrow">→</span><div class="field"><label for="freeTarget" data-i18n="target">Target language</label><select id="freeTarget" disabled></select></div></div>
         <div id="mymemory-info"><div class="provider-note"><span class="note-dot"></span><span data-i18n="freeNote">No account required. Anonymous use is limited to 5,000 characters per day.</span></div>
@@ -32,6 +32,10 @@
         <div id="youdao-info" hidden><div class="provider-note"><span class="note-dot"></span><span data-i18n="youdaoNote"></span></div>
           <p class="provider-privacy" data-i18n="youdaoPrivacy"></p>
           <a class="provider-link" href="https://ai.youdao.com/new/product-fanyi-text.s" target="_blank" rel="noreferrer" data-i18n="youdaoPricing"></a>
+        </div>
+        <div id="microsoft-info" hidden><div class="provider-note"><span class="note-dot"></span><span data-i18n="microsoftNote"></span></div>
+          <p class="provider-privacy" data-i18n="microsoftPrivacy"></p>
+          <a class="provider-link" href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/translator/" target="_blank" rel="noreferrer" data-i18n="microsoftPricing"></a>
         </div>
         <p class="provider-privacy" data-i18n="notSupportedFree">This translation does not use context, glossaries, or second-pass review.</p>
       </div>

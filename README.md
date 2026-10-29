@@ -1,6 +1,6 @@
 # ContextFlow Translate 0.1.0
 
-A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Youdao Cloud Translation, Google Cloud Translation, or your own AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Youdao Cloud Translation, Microsoft Translator, Google Cloud Translation, or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
@@ -13,6 +13,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
   unofficial integration and can be rate-limited, changed, or unavailable.
 - Youdao Cloud text translation with an application ID and secret; trial credit
   may be available and subsequent use may be charged.
+- Microsoft Azure Translator with a resource key and optional region; the F0
+  tier provides a monthly free quota, while other tiers may charge.
 - Google Cloud Translation Basic for standard translation without an LLM; a
   Google Cloud API key and billing account are required.
 - AI translation in groups of five paragraphs, including title, article opening
@@ -79,6 +81,14 @@ The extension will report failures rather than silently switch services.
 3. 回到扩展弹窗，在翻译服务中选择 **网易有道智云**，选择源语言和目标语言，点击**翻译网页**，并允许访问有道域名。
 
 有道模式不需要配置 AI 模型。网页文字会发送到有道，语种组合的可用性由服务决定；失败时显示错误码。长段落会拆分处理，最多并发三个段落。扩展不会自动切换到其他服务。
+
+### 微软翻译
+
+1. 在 [Azure 门户](https://portal.azure.com/)创建 Translator 资源；如需免费层，选择 F0，并确认账户实际套餐和用量限制。
+2. 在资源的“密钥和终结点”页面获取密钥和资源地区。在扩展的**设置**中填写并点击**保存微软凭据**。全球单服务资源可不填地区；区域或多服务资源必须填写实际地区代码，例如 `eastus`。
+3. 返回扩展弹窗，选择 **微软翻译 · Azure**，选择语种并点击**翻译网页**，首次使用时允许访问微软域名。
+
+微软模式不需要 AI 模型。选中的网页文字会发送给微软；密钥保存在浏览器本地，未单独加密。微软官方 [F0 定价](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/translator/)列出每月 200 万字符的标准翻译和自定义翻译训练组合额度；其他套餐可能收费，具体以账户和微软当前规定为准。
 
 ### Google Cloud Translation
 
@@ -162,6 +172,8 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
   to Google in request URLs, which can be logged by servers and network tools.
 - When using Youdao, selected passages are sent to Youdao Cloud. The application
   ID and secret are stored locally; requests are signed in the background.
+- When using Microsoft Translator, selected passages are sent to Microsoft; the
+  resource key and region are stored locally.
 - When using AI mode, selected passages, document title, surrounding context, and glossary terms go to **your configured AI provider**.
 - Credentials are stored in `chrome.storage.local`, accessible to trusted extension pages and the background worker, not directly to the webpage. **Local storage is not encrypted with a separate application password**; protect your OS account and Chrome profile.
 - Access to the selected provider's API origin is requested at runtime, not to every visited website. The extension uses `activeTab` permission for the open webpage.
@@ -180,7 +192,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Complex page layouts can still render overlays imperfectly; text extraction may select unwanted items or miss nonstandard blocks.
 - Translation quality depends on the configured model, prompt, glossary and source text. **No benchmark has established superiority to any other extension**.
 - The second-pass review can help but cannot guarantee correctness and uses more tokens.
-- AI and Google Cloud requests are grouped sequentially; MyMemory, Youdao, and the
+- AI, Microsoft and Google Cloud requests are grouped sequentially; MyMemory, Youdao, and the
   unofficial Google web endpoint use up to three concurrent paragraph requests.
   Requests have a 27-second timeout. Very slow local or remote LLMs may time out.
 
@@ -199,6 +211,7 @@ popup.html/js            Click-to-translate and remove overlays
 free-translate.mjs       MyMemory translation and language choices
 google-web-translate.mjs Unofficial Google Translate web endpoint adapter
 youdao-translate.mjs      Youdao Cloud text translation adapter
+microsoft-translate.mjs   Microsoft Translator REST API adapter
 google-translate.mjs     Google Cloud Translation Basic adapter
 model-adapters.mjs       Compatible, Gemini and Claude API request adapters
 discussion.js            Read Kaggle or structured discussion data

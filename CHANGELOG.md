@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added Microsoft Azure Translator with resource-key authentication and F0
+  free-tier and pricing information.
+
 - Made the on-page quick translation button movable by dragging or keyboard.
 
 - Added Youdao Cloud text translation with locally stored application

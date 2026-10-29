@@ -12,12 +12,12 @@ globalThis.chrome = {
   runtime: {id: 'test', onMessage: {addListener: fn => { runtimeListener = fn; }}},
   commands: {onCommand: {addListener: fn => { commandListener = fn; }}},
   storage: {local: {setAccessLevel: async () => {}, get: async key => ({[key]: saved[key]}), set: async data => Object.assign(saved, data)}},
-  permissions: {contains: async ({origins}) => permitted && ['https://api.mymemory.translated.net/*', 'https://translate.googleapis.com/*', 'https://openapi.youdao.com/*'].includes(origins[0])},
+  permissions: {contains: async ({origins}) => permitted && ['https://api.mymemory.translated.net/*', 'https://translate.googleapis.com/*', 'https://openapi.youdao.com/*', 'https://api.cognitive.microsofttranslator.com/*'].includes(origins[0])},
   tabs: {sendMessage: async (tabId, message) => {
     messages.push({tabId, ...message});
     if (message.type === 'CF_PING') {
       if (!installed) throw new Error('No receiver');
-      return {ok: true, protocol: 8, running};
+      return {ok: true, protocol: 9, running};
     }
     if (message.type === 'CF_QUICK_SHOW' || message.type === 'CF_QUICK_NOTICE') return {ok: true};
     if (message.type === 'CF_START') return {ok: true, started: true, found: 1};
@@ -88,4 +88,16 @@ test('快捷键使用有道配置且不向网页传递凭据', async () => {
   const start = messages.find(message => message.type === 'CF_START');
   assert.equal(start.preferences.engine.provider, 'youdao');
   assert.equal(JSON.stringify(start).includes('secret'), false);
+});
+
+test('快捷键支持微软翻译且不向网页发送密钥', async () => {
+  saved.settings.microsoftKey = 'ms-secret';
+  saved.settings.microsoftRegion = 'eastus';
+  saved.translationEngine = {provider:'microsoft', source:'en', target:'zh-CN'};
+  messages.length = 0;
+  commandListener('quick-translate', {id:7, url:'https://example.com/'});
+  await tick();
+  const start = messages.find(message => message.type === 'CF_START');
+  assert.equal(start.preferences.engine.provider, 'microsoft');
+  assert.equal(JSON.stringify(start).includes('ms-secret'), false);
 });

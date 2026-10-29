@@ -4,6 +4,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   googleTranslateKey: "",
   youdaoAppKey: "",
   youdaoAppSecret: "",
+  microsoftKey: "",
+  microsoftRegion: "",
   endpoint: "https://api.openai.com/v1",
   apiKey: "",
   model: "",
