@@ -29,12 +29,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}); } catch {}
-  if (ping?.ok && ping.protocol !== 9) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 10) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"});
-    if (!ping?.ok || ping.protocol !== 9) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 10) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}});
   return ping;
@@ -223,7 +223,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 9};
+      return {protocol: 10};
     }
     if (message?.type === "CF_QUICK_START") {
       if (!sender.tab) throw new Error("Quick translation must originate from a webpage.");

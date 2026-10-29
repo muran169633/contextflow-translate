@@ -6,7 +6,7 @@
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
   const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", truncated: false};
-  let quickControl, quickTranslateButton, quickCloseButton, quickDragButton;
+  let quickControl, quickTranslateButton, quickCloseButton;
   let quickPosition = null;
   function uiText(key, values = {}) {
     const template = state.messages[key] || key;
@@ -134,12 +134,10 @@
     state.messages = {...state.messages, ...(messages || {})};
     if (quickControl?.isConnected) {
       quickTranslateButton.textContent = uiText("quickTranslate");
-      quickTranslateButton.title = uiText("quickTranslateTitle");
-      quickTranslateButton.setAttribute("aria-label", uiText("quickTranslateTitle"));
+      quickTranslateButton.title = `${uiText("quickTranslateTitle")} · ${uiText("quickMove")}`;
+      quickTranslateButton.setAttribute("aria-label", quickTranslateButton.title);
       quickCloseButton.title = uiText("quickClose");
       quickCloseButton.setAttribute("aria-label", uiText("quickClose"));
-      quickDragButton.title = uiText("quickMove");
-      quickDragButton.setAttribute("aria-label", uiText("quickMove"));
       return;
     }
     quickControl = document.createElement("div");
@@ -149,44 +147,42 @@
     translate.type = "button";
     translate.className = "cf-quick-translate";
     translate.textContent = uiText("quickTranslate");
-    translate.title = uiText("quickTranslateTitle");
-    translate.setAttribute("aria-label", uiText("quickTranslateTitle"));
+    translate.title = `${uiText("quickTranslateTitle")} · ${uiText("quickMove")}`;
+    translate.setAttribute("aria-label", translate.title);
     const close = document.createElement("button");
     close.type = "button";
     close.className = "cf-quick-close";
     close.textContent = "×";
     close.title = uiText("quickClose");
     close.setAttribute("aria-label", uiText("quickClose"));
-    const drag = document.createElement("button");
-    drag.type = "button";
-    drag.className = "cf-quick-drag";
-    drag.textContent = "⠿";
-    drag.title = uiText("quickMove");
-    drag.setAttribute("aria-label", uiText("quickMove"));
     let pointer = null;
-    drag.addEventListener("pointerdown", event => {
+    let suppressClick = false;
+    translate.addEventListener("pointerdown", event => {
       if (event.button !== 0 || pointer) return;
+      suppressClick = false;
       const rect = quickControl.getBoundingClientRect();
-      pointer = {id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top};
-      drag.setPointerCapture(event.pointerId);
-      event.preventDefault();
+      pointer = {id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false};
+      translate.setPointerCapture(event.pointerId);
       event.stopPropagation();
     });
-    drag.addEventListener("pointermove", event => {
+    translate.addEventListener("pointermove", event => {
       if (!pointer || event.pointerId !== pointer.id) return;
+      if (!pointer.moved && Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) < 5) return;
+      pointer.moved = true;
       moveQuickControl(pointer.left + event.clientX - pointer.x, pointer.top + event.clientY - pointer.y);
       event.preventDefault();
       event.stopPropagation();
     });
     const endDrag = event => {
       if (!pointer || event.pointerId !== pointer.id) return;
+      suppressClick = event.type === "pointerup" && pointer.moved;
       pointer = null;
       event.stopPropagation();
     };
-    drag.addEventListener("pointerup", endDrag);
-    drag.addEventListener("pointercancel", endDrag);
-    drag.addEventListener("lostpointercapture", endDrag);
-    drag.addEventListener("keydown", event => {
+    translate.addEventListener("pointerup", endDrag);
+    translate.addEventListener("pointercancel", endDrag);
+    translate.addEventListener("lostpointercapture", endDrag);
+    translate.addEventListener("keydown", event => {
       const direction = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[event.key];
       if (!direction) return;
       const rect = quickControl.getBoundingClientRect();
@@ -197,9 +193,14 @@
     });
     quickTranslateButton = translate;
     quickCloseButton = close;
-    quickDragButton = drag;
     close.addEventListener("click", () => quickControl.remove());
     translate.addEventListener("click", async event => {
+      if (suppressClick && event.detail !== 0) {
+        suppressClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       // Page scripts can see the button but cannot initiate a translation on the user's behalf.
       if (!event.isTrusted || translate.disabled) return;
       translate.disabled = true;
@@ -212,7 +213,7 @@
         translate.disabled = false;
       }
     });
-    quickControl.append(translate, close, drag);
+    quickControl.append(translate, close);
     document.body.appendChild(quickControl);
     if (quickPosition) moveQuickControl(quickPosition.left, quickPosition.top);
   }
@@ -396,7 +397,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 9, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 10, running: state.running, count: state.total});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});

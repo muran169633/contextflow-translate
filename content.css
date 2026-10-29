@@ -108,9 +108,8 @@
   font: 600 13px/1 system-ui, sans-serif !important;
   text-transform: none !important;
 }
-.cf-quick-control .cf-quick-translate {padding: 0 10px !important;}
+.cf-quick-control .cf-quick-translate {padding: 0 10px !important; cursor: grab !important; touch-action: none !important; user-select: none !important;}
+.cf-quick-control .cf-quick-translate:active {cursor: grabbing !important;}
 .cf-quick-control .cf-quick-close {width: 29px !important; padding: 0 !important; font-size: 18px !important; opacity: .8 !important;}
-.cf-quick-control .cf-quick-drag {width: 27px !important; padding: 0 !important; font-size: 19px !important; cursor: grab !important; touch-action: none !important;}
-.cf-quick-control .cf-quick-drag:active {cursor: grabbing !important;}
 .cf-quick-control button:hover, .cf-quick-control button:focus-visible {background: rgba(255,255,255,.18) !important; outline: 2px solid #fff !important; outline-offset: -2px !important;}
 .cf-quick-control button:disabled {opacity: .55 !important; cursor: wait !important;}

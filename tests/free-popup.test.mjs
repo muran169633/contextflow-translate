@@ -10,8 +10,8 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
   const saved = {};
   let requested;
   let started;
-  let pingVersion = 9;
-  let backgroundVersion = 9;
+  let pingVersion = 10;
+  let backgroundVersion = 10;
   let starts = 0;
   let quickShown = false;
   globalThis.document = {documentElement: {}, createElement: () => ({}), getElementById: id => nodes.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
@@ -50,7 +50,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /刷新网页/);
-    pingVersion = 9;
+    pingVersion = 10;
     backgroundVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));
