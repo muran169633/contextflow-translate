@@ -75,7 +75,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 7) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 8) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -128,7 +128,7 @@ async function runAction(kind) {
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 7) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 8) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;

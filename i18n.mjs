@@ -112,6 +112,13 @@ Object.assign(messages.es, {youdaoProvider:'Traducción Youdao Cloud', youdaoNot
 Object.assign(messages.de, {youdaoProvider:'Youdao Cloud Translation', youdaoNote:'App-ID und Geheimschlüssel erforderlich; nach einem möglichen Testguthaben können Kosten entstehen.', youdaoPrivacy:'Ausgewählter Text wird an Youdao gesendet. Speichere Zugangsdaten in den Einstellungen.', youdaoPricing:'Youdao Produkt und Preise', youdaoAppKey:'Youdao App-ID', youdaoAppSecret:'Youdao App-Geheimschlüssel', youdaoKeyHelp:'Erstelle eine App und verknüpfe den Textübersetzungsdienst. Zugangsdaten werden lokal ohne zusätzliche Verschlüsselung gespeichert; prüfe Guthaben und Preise im Konto.', saveYoudaoKey:'Youdao-Zugangsdaten speichern', youdaoKeySaved:'Youdao-Zugangsdaten gespeichert. Wähle Youdao im Popup.', youdaoNeedKey:'Speichere zuerst Youdao App-ID und Geheimschlüssel in den Einstellungen.', permissionYoudao:'Erlaube vor der Übersetzung den Zugriff auf Youdao.'});
 Object.assign(messages.ko, {youdaoProvider:'Youdao 클라우드 번역', youdaoNote:'앱 ID와 비밀키가 필요합니다. 체험 크레딧 이후에는 요금이 발생할 수 있습니다.', youdaoPrivacy:'선택한 텍스트가 Youdao로 전송됩니다. 설정에서 인증 정보를 저장하세요.', youdaoPricing:'Youdao 제품 및 요금', youdaoAppKey:'Youdao 앱 ID', youdaoAppSecret:'Youdao 앱 비밀키', youdaoKeyHelp:'앱을 만들고 텍스트 번역 서비스에 연결하세요. 인증 정보는 별도 암호화 없이 로컬에 저장됩니다. 크레딧과 요금은 계정에서 확인하세요.', saveYoudaoKey:'Youdao 인증 정보 저장', youdaoKeySaved:'Youdao 인증 정보를 저장했습니다. 팝업에서 Youdao를 선택하세요.', youdaoNeedKey:'먼저 설정에서 Youdao 앱 ID와 비밀키를 저장하세요.', permissionYoudao:'번역 전에 Youdao 접근을 허용하세요.'});
 
+Object.assign(messages['zh-CN'], {quickMove:'拖动以移动按钮；方向键移动，按住 Shift 加速'});
+Object.assign(messages.en, {quickMove:'Drag to move; use arrow keys, hold Shift to move faster'});
+Object.assign(messages.ja, {quickMove:'ドラッグで移動。矢印キーで移動、Shift で加速'});
+Object.assign(messages.es, {quickMove:'Arrastra para mover; usa las flechas y mantén Shift para mover más rápido'});
+Object.assign(messages.de, {quickMove:'Zum Verschieben ziehen; Pfeiltasten verwenden, mit Umschalt schneller'});
+Object.assign(messages.ko, {quickMove:'드래그하여 이동; 방향키로 이동하고 Shift를 누르면 더 빠르게 이동'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);
@@ -135,7 +142,7 @@ export function applyTranslations(root, language) {
   for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = translate(language, node.dataset.i18nPlaceholder);
 }
 export function contentMessages(language) {
-  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressParallel', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickError'];
+  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressParallel', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickMove', 'quickError'];
   return Object.fromEntries(keys.map(key => [key, translate(language, key)]));
 }
 

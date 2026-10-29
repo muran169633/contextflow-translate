@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Made the on-page quick translation button movable by dragging or keyboard.
+
 - Added Youdao Cloud text translation with locally stored application
   credentials and trial-credit and pricing information.
 
