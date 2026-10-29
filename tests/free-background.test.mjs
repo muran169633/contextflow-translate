@@ -7,7 +7,7 @@ const store = {translationEngine: {provider: 'mymemory', source: 'en', target: '
 globalThis.chrome = {
   runtime: {id: 'test', onMessage: {addListener: callback => { listener = callback; }}},
   permissions: {contains: async ({origins}) => origins[0] === 'https://api.mymemory.translated.net/*'},
-  storage: {local: {setAccessLevel: async () => {}, get: async key => ({[key]: store[key]}), set: async data => Object.assign(store, data)}}
+  storage: {local: {setAccessLevel: async () => {}, get: async key => ({[key]: structuredClone(store[key])}), set: async data => Object.assign(store, structuredClone(data))}}
 };
 globalThis.fetch = async url => {
   fetchCount++;
@@ -24,6 +24,25 @@ test('无需模型的免费翻译走正式后台入口并缓存', async () => {
   const second = await run();
   assert.equal(second.cacheHit, true);
   assert.equal(fetchCount, 1);
+});
+
+test('相同原文在页面位置和周边文本变化时复用缓存并映射新段落 ID', async () => {
+  const message = {type: 'CF_TRANSLATE', entries: [{id: 'cf-88', text: 'A short test paragraph.'}], context: {title: 'New title'}, engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}};
+  const result = await new Promise(resolve => listener(message, {id: 'test', tab: {id: 1}}, resolve));
+  assert.equal(result.cacheHit, true);
+  assert.equal(result.translations['cf-88'], '无需模型的翻译');
+  assert.equal(fetchCount, 1);
+});
+
+test('多个并发请求的缓存写入不会互相覆盖', async () => {
+  const engine = {provider: 'mymemory', source: 'en', target: 'zh-CN'};
+  const send = index => new Promise(resolve => listener({type: 'CF_TRANSLATE', entries: [{id: `cf-${index}`, text: `Different paragraph number ${index}.`}], context: {}, engine}, {id: 'test', tab: {id: 1}}, resolve));
+  const results = await Promise.all([send(2), send(3), send(4)]);
+  assert.ok(results.every(result => result.ok));
+  assert.equal(Object.keys(store.translationCache).length, 4);
+  const before = fetchCount;
+  assert.ok((await Promise.all([send(2), send(3), send(4)])).every(result => result.cacheHit));
+  assert.equal(fetchCount, before);
 });
 
 test('每次运行的服务选择不受后台旧配置影响', async () => {

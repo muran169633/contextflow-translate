@@ -13,7 +13,7 @@ function makePage(texts, reply = message => ({ok: true, translations: Object.fro
   let listener;
   const paragraph = text => ({tagName: 'P', textContent: text, isConnected: true,
     closest: () => null, querySelector: () => null, getClientRects: () => [1],
-    insertAdjacentElement(_position, node) { rendered.push(node); }});
+    insertAdjacentElement(_position, node) { this.translated = node; rendered.push(node); }});
   const paragraphs = texts.map(paragraph);
   const article = {querySelectorAll: () => [paragraphs[0]]};
   const main = {contains: value => value === article, querySelectorAll: selector => selector === 'article' ? [{}, {}] : paragraphs};
@@ -26,7 +26,7 @@ function makePage(texts, reply = message => ({ok: true, translations: Object.fro
     return reply(message);
   }}};
   vm.runInNewContext(script, {document, chrome, getComputedStyle: () => ({visibility: 'visible', display: 'block'})});
-  return {listener, requests, rendered, addParagraph: text => paragraphs.push(paragraph(text)), getToast: () => toast};
+  return {listener, requests, rendered, paragraphs, addParagraph: text => paragraphs.push(paragraph(text)), getToast: () => toast};
 }
 
 test('多文章页面的短评论和长段落都进入翻译，长段按协议分段后合并', async () => {
@@ -38,9 +38,9 @@ test('多文章页面的短评论和长段落都进入翻译，长段按协议�
   assert.equal(result.found, 3);
   assert.equal(result.truncated, false);
   assert.equal(page.rendered.length, 3);
-  assert.equal(page.rendered[0].children[1].textContent, 'Yes!');
-  assert.equal(page.rendered[1].children[1].textContent, longText);
-  assert.equal(page.rendered[2].children[1].textContent, 'Another reply.');
+  assert.equal(page.paragraphs[0].translated.children[1].textContent, 'Yes!');
+  assert.equal(page.paragraphs[1].translated.children[1].textContent, longText);
+  assert.equal(page.paragraphs[2].translated.children[1].textContent, 'Another reply.');
   assert.ok(page.requests.length >= 4);
   assert.ok(page.requests.every(request => request.entries.every(entry => entry.text.length <= 1600)));
 });

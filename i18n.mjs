@@ -98,6 +98,12 @@ Object.assign(messages.ja, {permissionGoogle:'翻訳前に Google Cloud Translat
 Object.assign(messages.es, {permissionGoogle:'Permite el acceso a Google Cloud Translation antes de traducir.'});
 Object.assign(messages.de, {permissionGoogle:'Erlaube den Zugriff auf Google Cloud Translation vor der Übersetzung.'});
 Object.assign(messages.ko, {permissionGoogle:'번역 전에 Google Cloud Translation 접근을 허용하세요.'});
+Object.assign(messages['zh-CN'], {googleWebProvider:'Google 翻译 · 免密钥（非官方）', googleWebNote:'无需密钥；此非官方接口可能限流、变更或失效。', googleWebPrivacy:'选中的文本将发送给 Google 翻译；这不是官方支持的开发接口。', progressParallel:'正在翻译：已完成 {done}/{total} 段，失败 {failed} 段。'});
+Object.assign(messages.en, {googleWebProvider:'Google Translate · no key (unofficial)', googleWebNote:'No key required; this unofficial endpoint can be throttled, changed or disabled.', googleWebPrivacy:'Selected text is sent to Google Translate; this is not an officially supported developer API.', progressParallel:'Translating: {done}/{total} completed, {failed} failed.'});
+Object.assign(messages.ja, {googleWebProvider:'Google 翻訳 · キー不要（非公式）', googleWebNote:'キー不要。非公式接続先は制限、変更、停止される場合があります。', googleWebPrivacy:'テキストは Google 翻訳に送信されます。公式にサポートされた開発者 API ではありません。', progressParallel:'翻訳中：完了 {done}/{total}、失敗 {failed}。'});
+Object.assign(messages.es, {googleWebProvider:'Google Translate · sin clave (no oficial)', googleWebNote:'Sin clave; este endpoint no oficial puede cambiar, limitarse o dejar de funcionar.', googleWebPrivacy:'El texto se envía a Google Translate; no es una API oficial para desarrolladores.', progressParallel:'Traduciendo: {done}/{total} completados, {failed} fallidos.'});
+Object.assign(messages.de, {googleWebProvider:'Google Translate · ohne Schlüssel (inoffiziell)', googleWebNote:'Ohne Schlüssel; der inoffizielle Endpunkt kann begrenzt, geändert oder eingestellt werden.', googleWebPrivacy:'Der Text wird an Google Translate gesendet; dies ist keine offiziell unterstützte Entwickler-API.', progressParallel:'Übersetzung: {done}/{total} abgeschlossen, {failed} fehlgeschlagen.'});
+Object.assign(messages.ko, {googleWebProvider:'Google 번역 · 키 불필요 (비공식)', googleWebNote:'키가 필요 없지만 비공식 엔드포인트는 제한, 변경 또는 중단될 수 있습니다.', googleWebPrivacy:'선택한 텍스트는 Google 번역으로 전송됩니다. 공식 지원 개발자 API가 아닙니다.', progressParallel:'번역 중: 완료 {done}/{total}, 실패 {failed}.'});
 
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
@@ -122,7 +128,7 @@ export function applyTranslations(root, language) {
   for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = translate(language, node.dataset.i18nPlaceholder);
 }
 export function contentMessages(language) {
-  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickError'];
+  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressParallel', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickError'];
   return Object.fromEntries(keys.map(key => [key, translate(language, key)]));
 }
 

@@ -5,7 +5,7 @@ export const LANGUAGE_CODES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'ja', 'ko',
 export function normalizeEngine(engine, hasModel = false) {
   const input = engine && typeof engine === 'object' ? engine : {};
   return {
-    provider: ['mymemory', 'google', 'ai'].includes(input.provider) ? input.provider : (hasModel ? 'ai' : 'mymemory'),
+    provider: ['mymemory', 'google-web', 'google', 'ai'].includes(input.provider) ? input.provider : (hasModel ? 'ai' : 'mymemory'),
     source: LANGUAGE_CODES.includes(input.source) ? input.source : DEFAULT_ENGINE.source,
     target: LANGUAGE_CODES.includes(input.target) ? input.target : DEFAULT_ENGINE.target
   };

@@ -1,6 +1,6 @@
 # ContextFlow Translate 0.1.0
 
-A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, Google Cloud Translation, or your own AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Google Cloud Translation, or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
@@ -9,10 +9,13 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 - Bilingual paragraph translation, with the original webpage preserved.
 - A no-account MyMemory mode with 30 selectable source and target languages.
   Availability and quality depend on the language pair and the provider.
+- An optional Google Translate web endpoint that needs no API key. This is an
+  unofficial integration and can be rate-limited, changed, or unavailable.
 - Google Cloud Translation Basic for standard translation without an LLM; a
   Google Cloud API key and billing account are required.
 - AI translation in groups of five paragraphs, including title, article opening
-  and adjacent-paragraph context. MyMemory translates paragraphs individually.
+  and adjacent-paragraph context. MyMemory and the Google web endpoint send
+  paragraphs individually, with up to three paragraphs in flight.
 - OpenAI-compatible `chat/completions` API with an arbitrary HTTPS base URL, including many personal API gateways; local HTTP model servers on `localhost` / `127.0.0.1`.
 - Native Google Gemini `generateContent` and Anthropic Claude Messages APIs.
   Each API type stores its own model name and key separately.
@@ -35,7 +38,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 2. Open `chrome://extensions` (or `edge://extensions`). Enable **Developer mode**.
 3. Click **Load unpacked** and select the directory containing `manifest.json`.
 4. Open an ordinary `https://` article and click the ContextFlow toolbar icon.
-5. Select **MyMemory · free**, choose the source and target languages, and click **Translate page**. On first use, allow access to the MyMemory API. The source language must be selected explicitly.
+5. Select **MyMemory · free** or **Google Translate · no key (unofficial)**, choose the source and target languages, and click **Translate page**. On first use, allow access to the selected service. The source language must be selected explicitly.
 6. Alternatively select **Your AI model** and open **Settings**. Choose an API type: **OpenAI-compatible** for any provider exposing `chat/completions`, **Google Gemini API**, or **Anthropic Claude API**. Enter the model ID and its provider's API key; for compatible services also enter the base URL. Save, then return to the page. **Save & test API** sends a short test and may incur a provider charge.
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
 8. After expanding replies or loading more content, click **Translate new or unfinished content**. Previously translated blocks are retained. The button sends newly found text to the selected provider and can use quota or incur charges.
@@ -57,6 +60,12 @@ opening the extension or using the shortcut on that page; it does not add
 permanent access to all sites.
 
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
+
+The optional Google Translate web endpoint does not require an API key, but
+it is not a documented or supported Google Cloud API. Its availability, rate
+limits and future behavior are not guaranteed. It sends the selected text to
+Google in the request URL and does not apply AI context, glossary or review.
+The extension will report failures rather than silently switch services.
 
 To use Google Cloud Translation, create a Google Cloud project with the
 [Translation API enabled](https://docs.cloud.google.com/translate/docs/setup),
@@ -134,13 +143,18 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - When using MyMemory, each selected passage is sent to MyMemory; its [terms and privacy policy](https://mymemory.translated.net/terms-and-conditions) state that submitted segments may be retained long term and shared with service partners. Do not use it for confidential or private content. The free mode does not send the title, surrounding context or glossary.
 - When using Google Cloud Translation, selected passages are sent to Google
   Cloud; the separate API key is stored locally in the browser profile.
+- When using the unofficial Google Translate web endpoint, selected text is sent
+  to Google in request URLs, which can be logged by servers and network tools.
 - When using AI mode, selected passages, document title, surrounding context, and glossary terms go to **your configured AI provider**.
 - Credentials are stored in `chrome.storage.local`, accessible to trusted extension pages and the background worker, not directly to the webpage. **Local storage is not encrypted with a separate application password**; protect your OS account and Chrome profile.
 - Access to the selected provider's API origin is requested at runtime, not to every visited website. The extension uses `activeTab` permission for the open webpage.
 - Translations are inserted using `textContent`, never parsed as HTML, to avoid untrusted model output injecting page markup or scripts.
 - Use HTTPS for remote endpoints. Local HTTP is permitted only for `localhost` / `127.0.0.1`.
 - Avoid feeding confidential, medical, financial, or private enterprise content to unknown API relays. The optional cache stores translated passages locally for seven days.
-- A stopped process may still have one already-sent API call in flight; canceling its UI does not reverse provider charges.
+- Stopping prevents new paragraphs from starting, but already-sent paragraphs
+  may continue making requests for their remaining segments and consume quota
+  or incur charges. Up to three paragraphs may be in flight for MyMemory and
+  the unofficial Google web endpoint.
 
 ## Known limitations
 
@@ -149,7 +163,9 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Complex page layouts can still render overlays imperfectly; text extraction may select unwanted items or miss nonstandard blocks.
 - Translation quality depends on the configured model, prompt, glossary and source text. **No benchmark has established superiority to any other extension**.
 - The second-pass review can help but cannot guarantee correctness and uses more tokens.
-- Translation requests are grouped sequentially, with a 27-second per-request timeout. Very slow local or remote LLMs may time out.
+- AI and Google Cloud requests are grouped sequentially; MyMemory and the
+  unofficial Google web endpoint use up to three concurrent paragraph requests.
+  Requests have a 27-second timeout. Very slow local or remote LLMs may time out.
 
 ## Next engineering milestones
 
@@ -164,6 +180,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 ```text
 popup.html/js            Click-to-translate and remove overlays
 free-translate.mjs       MyMemory translation and language choices
+google-web-translate.mjs Unofficial Google Translate web endpoint adapter
 google-translate.mjs     Google Cloud Translation Basic adapter
 model-adapters.mjs       Compatible, Gemini and Claude API request adapters
 discussion.js            Read Kaggle or structured discussion data

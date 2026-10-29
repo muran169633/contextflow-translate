@@ -230,12 +230,42 @@
     }
   }
 
+  async function processPublicParagraphs(items, token) {
+    let next = 0;
+    showToast(uiText("progressParallel", {done: 0, total: items.length, failed: 0}));
+    async function worker() {
+      while (!state.stop && state.token === token) {
+        const index = next++;
+        if (index >= items.length) return;
+        const item = items[index];
+        try {
+          const response = await translateGroup([item], getContext(items, index, index + 1), false, token);
+          if (state.stop || state.token !== token || !response) return;
+          renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
+          item.completed = true;
+          state.done++;
+        } catch (error) {
+          if (state.stop || state.token !== token) return;
+          renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
+          state.failed++;
+          if (error.fatal) {
+            state.failureReason = String(error.message || error);
+            state.stop = true;
+            showToast(uiText("progressFailed", {done: state.done, failed: state.failed, error: state.failureReason}), "warn");
+          }
+        }
+        if (!state.stop && state.token === token) showToast(uiText("progressParallel", {done: state.done, total: items.length, failed: state.failed}));
+      }
+    }
+    await Promise.all(Array.from({length: Math.min(3, items.length)}, () => worker()));
+  }
+
   async function processParagraphs(items, token) {
-    // The free service translates individual paragraphs; retain earlier successes if a later one fails.
-    const batchSize = state.engine?.provider === "mymemory" ? 1 : 5;
-    for (let index = 0; index < items.length;) {
+    const publicService = ["mymemory", "google-web"].includes(state.engine?.provider);
+    if (publicService) await processPublicParagraphs(items, token);
+    else for (let index = 0; index < items.length;) {
       if (state.stop || state.token !== token) break;
-      let group = items.slice(index, index + batchSize);
+      let group = items.slice(index, index + 5);
       const longIndex = group.findIndex(item => item.text.length > 1600);
       if (longIndex >= 0) group = longIndex === 0 ? [group[0]] : group.slice(0, longIndex);
       showToast(uiText("translating", {from: index + 1, to: index + group.length, total: items.length}));
@@ -308,7 +338,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 5, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 6, running: state.running, count: state.total});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});
@@ -322,6 +352,7 @@
       sendResponse({ok: true, ...startTranslation(message.preferences, true)});
     } else if (message?.type === "CF_STOP") {
       state.stop = true;
+      if (state.running) showToast(uiText("progressStopped", {done: state.done, failed: state.failed}), "warn");
       sendResponse({ok: true, stopped: true});
     } else if (message?.type === "CF_CLEAR") {
       state.stop = true;

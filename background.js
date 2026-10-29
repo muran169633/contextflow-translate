@@ -5,6 +5,7 @@ import {
 } from "./core.mjs";
 import {FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, translateFree} from "./free-translate.mjs";
 import {GOOGLE_TRANSLATE_ORIGIN, translateGoogle} from "./google-translate.mjs";
+import {GOOGLE_WEB_ORIGIN, translateGoogleWeb} from "./google-web-translate.mjs";
 import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
 import {contentMessages, resolveLanguage, translate} from "./i18n.mjs";
 
@@ -26,12 +27,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}); } catch {}
-  if (ping?.ok && ping.protocol !== 5) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 6) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"});
-    if (!ping?.ok || ping.protocol !== 5) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 6) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}});
   return ping;
@@ -51,7 +52,7 @@ async function quickTranslate(tab) {
     if (engine.provider !== "ai" && engine.source === engine.target) throw new Error(translate(language, "sameLanguage"));
     if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error(translate(language, "needModel"));
     if (engine.provider === "google" && !String(settings.googleTranslateKey || "").trim()) throw new Error(translate(language, "googleNeedKey"));
-    const origin = engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
+    const origin = engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
     if (!await chrome.permissions.contains({origins: [origin]})) throw new Error(translate(language, "quickAuthorize"));
     const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_START", preferences: {engine, target: settings.target, maxBlocks: settings.maxBlocks, messages: contentMessages(language)}});
     if (!result?.ok) throw new Error(translate(language, "quickError"));
@@ -139,36 +140,56 @@ async function sha256(text) {
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
 }
 
+let cacheWriteQueue = Promise.resolve();
+async function storeCache(key, entries, translations, reviewed) {
+  const write = cacheWriteQueue.catch(() => {}).then(async () => {
+    const {translationCache = {}} = await chrome.storage.local.get("translationCache");
+    const now = Date.now();
+    translationCache[key] = {time: now, values: entries.map(entry => translations[entry.id]), reviewed};
+    const cleaned = Object.fromEntries(
+      Object.entries(translationCache)
+        .filter(([, value]) => value && Number.isFinite(value.time) && now - value.time < 7 * 24 * 3600000)
+        .sort((a, b) => b[1].time - a[1].time)
+        .slice(0, 200)
+    );
+    await chrome.storage.local.set({translationCache: cleaned});
+  });
+  cacheWriteQueue = write;
+  try { await write; }
+  catch (error) { console.warn("Translation cache could not be saved:", String(error?.message || error)); }
+}
+
 async function translationWithCache(entries, context, force = false, forceAi = false, requestedEngine = null) {
   const settings = await readSettings();
   const {translationEngine} = await chrome.storage.local.get("translationEngine");
-  if (requestedEngine && (!['mymemory', 'google', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
+  if (requestedEngine && (!['mymemory', 'google-web', 'google', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
     throw new Error("Invalid translation engine selection.");
   }
   const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(requestedEngine || translationEngine, !!String(settings.model || "").trim());
   if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
-  const url = engine.provider === "ai" ? modelEndpoint(settings) : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : FREE_ORIGIN;
-  const key = await sha256(JSON.stringify({
-    version: 3, engine, provider: engine.provider === "ai" ? providerName(settings) : engine.provider, endpoint: url, model: settings.model, source: settings.source,
-    target: settings.target, style: settings.style, glossary: settings.glossary,
-    review: !!settings.review, context, entries
-  }));
+  const url = engine.provider === "ai" ? modelEndpoint(settings) : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
+  const cacheInput = {version: 4, engine, texts: entries.map(entry => entry.text)};
+  if (engine.provider === "ai") Object.assign(cacheInput, {
+    provider: providerName(settings), endpoint: url, model: settings.model, source: settings.source,
+    target: settings.target, style: settings.style, glossary: settings.glossary, review: !!settings.review, context
+  });
+  const key = await sha256(JSON.stringify(cacheInput));
 
   if (settings.cache && !force) {
     const {translationCache = {}} = await chrome.storage.local.get("translationCache");
     const hit = translationCache[key];
-    if (hit && Date.now() - hit.time < 7 * 24 * 3600000) {
-      return {translations: hit.translations, cacheHit: true, reviewed: !!hit.reviewed};
+    if (hit && Date.now() - hit.time < 7 * 24 * 3600000 && Array.isArray(hit.values) && hit.values.length === entries.length && hit.values.every(value => typeof value === "string" && value.trim())) {
+      return {translations: Object.fromEntries(entries.map((entry, index) => [entry.id, hit.values[index]])), cacheHit: true, reviewed: !!hit.reviewed};
     }
   }
 
   let translations;
   let reviewed = false;
   let reviewWarning = "";
-  if (engine.provider === "mymemory" || engine.provider === "google") {
+  if (engine.provider === "mymemory" || engine.provider === "google-web" || engine.provider === "google") {
     try {
       if (!await chrome.permissions.contains({origins: [url]})) throw new Error("Translation provider host access is not granted.");
-      translations = engine.provider === "google" ? await translateGoogle(entries, engine, settings.googleTranslateKey) : await translateFree(entries, engine);
+      translations = engine.provider === "google" ? await translateGoogle(entries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWeb(entries, engine) : await translateFree(entries, engine);
     } catch (error) {
       error.fatal = true;
       throw error;
@@ -188,18 +209,7 @@ async function translationWithCache(entries, context, force = false, forceAi = f
     }
   }
 
-  if (settings.cache) {
-    const {translationCache = {}} = await chrome.storage.local.get("translationCache");
-    const now = Date.now();
-    translationCache[key] = {time: now, translations, reviewed};
-    const cleaned = Object.fromEntries(
-      Object.entries(translationCache)
-        .filter(([, value]) => value && Number.isFinite(value.time) && now - value.time < 7 * 24 * 3600000)
-        .sort((a, b) => b[1].time - a[1].time)
-        .slice(0, 200)
-    );
-    await chrome.storage.local.set({translationCache: cleaned});
-  }
+  if (settings.cache) await storeCache(key, entries, translations, reviewed);
   return {translations, cacheHit: false, reviewed, reviewWarning};
 }
 
@@ -209,7 +219,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 5};
+      return {protocol: 6};
     }
     if (message?.type === "CF_QUICK_START") {
       if (!sender.tab) throw new Error("Quick translation must originate from a webpage.");

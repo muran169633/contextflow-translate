@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added an optional, no-key Google Translate web endpoint with an explicit
+  unofficial-service and privacy notice.
+- Improved free-service throughput with bounded paragraph concurrency and
+  reusable local translation caching.
 - Added contribution guidance and documented the project maintainer.
 - Added copying of Kaggle discussions, including returned collapsed replies,
   and a limited fallback for structured comments on other sites.

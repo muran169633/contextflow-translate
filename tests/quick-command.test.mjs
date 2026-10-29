@@ -12,12 +12,12 @@ globalThis.chrome = {
   runtime: {id: 'test', onMessage: {addListener: fn => { runtimeListener = fn; }}},
   commands: {onCommand: {addListener: fn => { commandListener = fn; }}},
   storage: {local: {setAccessLevel: async () => {}, get: async key => ({[key]: saved[key]}), set: async data => Object.assign(saved, data)}},
-  permissions: {contains: async ({origins}) => permitted && origins[0] === 'https://api.mymemory.translated.net/*'},
+  permissions: {contains: async ({origins}) => permitted && ['https://api.mymemory.translated.net/*', 'https://translate.googleapis.com/*'].includes(origins[0])},
   tabs: {sendMessage: async (tabId, message) => {
     messages.push({tabId, ...message});
     if (message.type === 'CF_PING') {
       if (!installed) throw new Error('No receiver');
-      return {ok: true, protocol: 5, running};
+      return {ok: true, protocol: 6, running};
     }
     if (message.type === 'CF_QUICK_SHOW' || message.type === 'CF_QUICK_NOTICE') return {ok: true};
     if (message.type === 'CF_START') return {ok: true, started: true, found: 1};
@@ -68,4 +68,12 @@ test('页面已经在翻译时快捷键不会重启或重复发送', async () =>
   assert.equal(messages.some(message => message.type === 'CF_START'), false);
   assert.match(messages.find(message => message.type === 'CF_QUICK_NOTICE').text, /正在翻译/);
   running = false;
+});
+
+test('快捷键支持无需模型的 Google 网页翻译', async () => {
+  saved.translationEngine = {provider: 'google-web', source: 'en', target: 'zh-CN'};
+  messages.length = 0;
+  commandListener('quick-translate', {id: 7, url: 'https://example.com/'});
+  await tick();
+  assert.equal(messages.find(message => message.type === 'CF_START').preferences.engine.provider, 'google-web');
 });
