@@ -67,7 +67,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 3) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 4) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -101,7 +101,7 @@ async function runAction(kind) {
   if (busy) return;
   const selectedEngine = {...engine};
   let permission;
-  if (kind === "CF_START" && ["mymemory", "google"].includes(selectedEngine.provider)) {
+  if (["CF_START", "CF_CONTINUE"].includes(kind) && ["mymemory", "google"].includes(selectedEngine.provider)) {
     if (selectedEngine.source === selectedEngine.target) { status(t("sameLanguage"), "error"); return; }
     if (selectedEngine.provider === "google" && !googleKeyPresent) { status(t("googleNeedKey"), "error"); return; }
     // Called synchronously from the click handler to preserve the user gesture.
@@ -111,20 +111,20 @@ async function runAction(kind) {
   for (const button of document.querySelectorAll("button")) button.disabled = true;
   for (const id of ["provider", "freeSource", "freeTarget"]) $(id).disabled = true;
   try {
-    if (kind === "CF_START") {
+    if (["CF_START", "CF_CONTINUE"].includes(kind)) {
       const config = await settings();
       if (selectedEngine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
       if (permission && !await permission) throw new Error(t(selectedEngine.provider === "google" ? "permissionGoogle" : "permissionFree"));
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 3) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 4) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
-      const result = await communicate(kind, {engine: selectedEngine, maxBlocks: config.maxBlocks, messages: contentMessages(language)});
+      const result = await communicate(kind, {engine: selectedEngine, target: config.target, maxBlocks: config.maxBlocks, messages: contentMessages(language)});
       status(result.started
-        ? t("started", {count: result.found})
-        : t("noParagraphs"), result.started ? "success" : "error");
+        ? t("started", {count: result.found}) + (result.truncated ? ` ${t("limitWarning", {limit: result.found})}` : "")
+        : t(kind === "CF_CONTINUE" ? "noNewParagraphs" : "noParagraphs"), result.started && !result.truncated ? "success" : result.started ? "info" : "error");
     } else if (kind === "CF_STOP") {
       await communicate(kind);
       status(t("stopped"), "success");
@@ -142,6 +142,7 @@ async function runAction(kind) {
 }
 
 $("start").addEventListener("click", () => runAction("CF_START"));
+$("continue").addEventListener("click", () => runAction("CF_CONTINUE"));
 $("stop").addEventListener("click", () => runAction("CF_STOP"));
 $("clear").addEventListener("click", () => runAction("CF_CLEAR"));
 $("copy-discussion").addEventListener("click", () => void copyDiscussion());
@@ -163,5 +164,5 @@ void (async () => {
     renderEngine();
     void updateSettingsPreview().catch(error => status(String(error?.message || error), "error"));
   });
-  for (const id of ["provider", "freeSource", "freeTarget", "start"]) $(id).disabled = false;
+  for (const id of ["provider", "freeSource", "freeTarget", "start", "continue"]) $(id).disabled = false;
 })().catch(error => status(String(error?.message || error), "error"));

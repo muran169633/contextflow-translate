@@ -38,6 +38,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 5. Select **MyMemory · free**, choose the source and target languages, and click **Translate page**. On first use, allow access to the MyMemory API. The source language must be selected explicitly.
 6. Alternatively select **Your AI model** and open **Settings**. Choose an API type: **OpenAI-compatible** for any provider exposing `chat/completions`, **Google Gemini API**, or **Anthropic Claude API**. Enter the model ID and its provider's API key; for compatible services also enter the base URL. Save, then return to the page. **Save & test API** sends a short test and may incur a provider charge.
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
+8. After expanding replies or loading more content, click **Translate new or unfinished content**. Previously translated blocks are retained. The button sends newly found text to the selected provider and can use quota or incur charges.
 
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
 
@@ -55,6 +56,9 @@ After updating the extension, reload it from the browser's extension management
 page and refresh the webpage before starting a new translation. Each run and
 its retries use the provider and language pair selected when the run started;
 after switching providers, click **Translate page** again to start a new run.
+The per-run paragraph limit is configurable in Settings; when reached, the
+extension warns that some content remains. Longer paragraphs are split into
+bounded requests and combined for display.
 
 Select **Interface language** in the popup or settings to change the UI.
 On first use the extension follows the browser language when supported and

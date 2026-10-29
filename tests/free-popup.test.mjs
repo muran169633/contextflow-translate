@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 
 test('免费模式通过弹窗请求权限并启动翻译，无需模型', async () => {
   const nodes = new Map();
-  for (const id of ['message', 'model', 'detail', 'start', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info']) {
+  for (const id of ['message', 'model', 'detail', 'start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info']) {
     nodes.set(id, {value: '', disabled: false, textContent: '', className: '', replaceChildren() {}, addEventListener(_type, fn) { this.handler = fn; }});
   }
-  const buttons = ['start', 'stop', 'clear', 'copy-discussion', 'settings'].map(id => nodes.get(id));
+  const buttons = ['start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings'].map(id => nodes.get(id));
   const saved = {};
   let requested;
   let started;
-  let pingVersion = 3;
-  let backgroundVersion = 3;
+  let pingVersion = 4;
+  let backgroundVersion = 4;
   let starts = 0;
   globalThis.document = {documentElement: {}, createElement: () => ({}), getElementById: id => nodes.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
   Object.defineProperty(globalThis, 'navigator', {configurable: true, value: {language: 'zh-CN'}});
@@ -20,7 +20,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     permissions: {request: ({origins}) => { requested = origins; return Promise.resolve(true); }},
     tabs: {query: async () => [{id: 1, url: 'https://example.com/article'}], sendMessage: async (_id, message) => {
       if (message.type === 'CF_PING') return {ok: true, protocol: pingVersion};
-      if (message.type === 'CF_START') { started = message; starts++; return {started: true, found: 1}; }
+      if (message.type === 'CF_START' || message.type === 'CF_CONTINUE') { started = message; starts++; return {started: true, found: 1}; }
       throw new Error('unexpected message');
     }},
     scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: backgroundVersion})}
@@ -38,16 +38,20 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     assert.equal(started.type, 'CF_START');
     assert.deepEqual(started.preferences.engine, {provider: 'mymemory', source: 'en', target: 'zh-CN'});
     assert.match(nodes.get('message').textContent, /已开始翻译/);
+    nodes.get('continue').handler();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(started.type, 'CF_CONTINUE');
+    assert.equal(starts, 2);
     pingVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(starts, 1);
+    assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /刷新网页/);
-    pingVersion = 3;
+    pingVersion = 4;
     backgroundVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));
-    assert.equal(starts, 1);
+    assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /重新加载扩展/);
   } finally {
     delete globalThis.document;

@@ -21,6 +21,7 @@ test('网页翻译流程使用所选语言显示进度和重试按钮', async ()
   }
   let listener;
   let request;
+  let calls = 0;
   const document = {
     title: 'Demo', body: {appendChild(node) { toast = node; }},
     querySelector: selector => selector === 'article' ? {querySelectorAll: () => [paragraph]} : null,
@@ -28,7 +29,7 @@ test('网页翻译流程使用所选语言显示进度和重试按钮', async ()
     createElement: () => element()
   };
   const chrome = {runtime: {onMessage: {addListener: fn => { listener = fn; }},
-    sendMessage: async message => { request = message; return {ok: true, translations: {[message.entries[0].id]: '译文'}}; }}};
+    sendMessage: async message => { calls++; request = message; return {ok: true, translations: {[message.entries[0].id]: '译文'}}; }}};
   vm.runInNewContext(source, {document, chrome, getComputedStyle: () => ({visibility: 'visible', display: 'block'})});
   let response;
   listener({type: 'CF_START', preferences: {maxBlocks: 1, messages: contentMessages('ja'), engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}}}, {}, value => { response = value; });
@@ -44,4 +45,7 @@ test('网页翻译流程使用所选语言显示进度和重试按钮', async ()
   await nodes[0].children[0].children[1].handler();
   assert.equal(request.force, true);
   assert.equal(request.engine.provider, 'mymemory');
+  listener({type: 'CF_CONTINUE', preferences: {maxBlocks: 1, messages: contentMessages('ja'), engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}}}, {}, value => { response = value; });
+  assert.equal(response.started, false);
+  assert.equal(calls, 2);
 });

@@ -67,6 +67,18 @@ Object.assign(messages.ja, {progressFailed: '翻訳中断：{error}。完了 {do
 Object.assign(messages.es, {progressFailed: 'Traducción interrumpida: {error}. Completados {done}, fallidos {failed}; el resto no se tradujo.'});
 Object.assign(messages.de, {progressFailed: 'Übersetzung unterbrochen: {error}. {done} übersetzt, {failed} fehlgeschlagen; übrige Absätze wurden nicht übersetzt.'});
 Object.assign(messages.ko, {progressFailed: '번역 중단: {error}. 완료 {done}, 실패 {failed}. 나머지 문단은 번역되지 않았습니다.'});
+Object.assign(messages['zh-CN'], {limitWarning: '已达到本次 {limit} 段的上限，其余内容未翻译；可在设置中提高段落上限。'});
+Object.assign(messages.en, {limitWarning: 'The {limit}-paragraph limit was reached; remaining content was not translated. Increase the limit in Settings.'});
+Object.assign(messages.ja, {limitWarning: '上限の {limit} 段落に達したため、残りは翻訳されていません。設定で上限を増やせます。'});
+Object.assign(messages.es, {limitWarning: 'Se alcanzó el límite de {limit} párrafos; el resto no se tradujo. Puedes aumentar el límite en Configuración.'});
+Object.assign(messages.de, {limitWarning: 'Das Limit von {limit} Absätzen wurde erreicht; der Rest wurde nicht übersetzt. Erhöhe das Limit in den Einstellungen.'});
+Object.assign(messages.ko, {limitWarning: '{limit}문단 제한에 도달하여 나머지는 번역되지 않았습니다. 설정에서 제한을 늘릴 수 있습니다.'});
+Object.assign(messages['zh-CN'], {continueTranslation: '翻译新增或未完成内容', noNewParagraphs: '没有发现新增或未完成的段落。'});
+Object.assign(messages.en, {continueTranslation: 'Translate new or unfinished content', noNewParagraphs: 'No new or unfinished paragraphs found.'});
+Object.assign(messages.ja, {continueTranslation: '新規・未完了の内容を翻訳', noNewParagraphs: '新規または未完了の段落は見つかりませんでした。'});
+Object.assign(messages.es, {continueTranslation: 'Traducir contenido nuevo o pendiente', noNewParagraphs: 'No se encontraron párrafos nuevos ni pendientes.'});
+Object.assign(messages.de, {continueTranslation: 'Neue oder ausstehende Inhalte übersetzen', noNewParagraphs: 'Keine neuen oder ausstehenden Absätze gefunden.'});
+Object.assign(messages.ko, {continueTranslation: '새 내용과 미완료 내용 번역', noNewParagraphs: '새 문단이나 미완료 문단을 찾지 못했습니다.'});
 
 Object.assign(messages['zh-CN'], {googleNote:'需要 Google Cloud API Key 和计费账号；超出免费额度可能收费。', googlePrivacy:'选中的文本将发送给 Google Cloud Translation。请先在设置中填写密钥。', googlePricing:'Google 计费说明', googleKey:'Google Cloud Translation API Key', googleKeyHelp:'需要启用翻译 API 的 Google Cloud 项目和计费账号；超出免费额度可能收费。', saveGoogleKey:'保存 Google 密钥', googleKeySaved:'Google 翻译密钥已保存。返回扩展后选择 Google Cloud Translation。', googleNeedKey:'请先在设置中保存 Google Cloud Translation API Key。', notSupportedFree:'该翻译服务不使用上下文、术语表和二次校对。'});
 Object.assign(messages.en, {googleNote:'Requires a Google Cloud API key and billing account. Usage beyond the free credit may incur charges.', googlePrivacy:'Selected text is sent to Google Cloud Translation. Add the key in Settings.', googlePricing:'Google pricing', googleKey:'Google Cloud Translation API key', googleKeyHelp:'Requires a Google Cloud project with the Translation API enabled and a billing account; charges may apply after the free credit.', saveGoogleKey:'Save Google key', googleKeySaved:'Google translation key saved. Select Google Cloud Translation in the popup.', googleNeedKey:'Save a Google Cloud Translation API key in Settings first.', notSupportedFree:'This service does not use context, glossaries or second-pass review.'});
@@ -104,7 +116,7 @@ export function applyTranslations(root, language) {
   for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = translate(language, node.dataset.i18nPlaceholder);
 }
 export function contentMessages(language) {
-  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs'];
+  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning'];
   return Object.fromEntries(keys.map(key => [key, translate(language, key)]));
 }
 

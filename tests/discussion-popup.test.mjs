@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 
 test("复制按钮读取当前标签并写入剪贴板", async () => {
   const elements = new Map();
-  for (const id of ["message", "model", "detail", "start", "stop", "clear", "copy-discussion", "settings", "uiLanguage", "provider", "freeSource", "freeTarget", "free-controls", "ai-controls", "mymemory-info", "google-info"]) {
+  for (const id of ["message", "model", "detail", "start", "continue", "stop", "clear", "copy-discussion", "settings", "uiLanguage", "provider", "freeSource", "freeTarget", "free-controls", "ai-controls", "mymemory-info", "google-info"]) {
     elements.set(id, {textContent: "", className: "", disabled: false, replaceChildren() {}, addEventListener(_type, fn) { this.click = fn; }});
   }
-  const buttons = ["start", "stop", "clear", "copy-discussion", "settings"].map(id => elements.get(id));
+  const buttons = ["start", "continue", "stop", "clear", "copy-discussion", "settings"].map(id => elements.get(id));
   const copied = Promise.withResolvers();
   let installed;
   globalThis.document = {documentElement: {}, createElement: () => ({}), getElementById: id => elements.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};

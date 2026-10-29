@@ -17,6 +17,9 @@
   earlier results remain visible and the error identifies the interruption.
 - Added Google Cloud Translation Basic as an optional, separately configured
   translation provider, with billing and privacy information in the interface.
+- Improved coverage of short comments, long paragraphs and pages with multiple
+  article regions; added an explicit action for new or unfinished content and
+  a warning when the configured paragraph limit leaves content untranslated.
 
 ## 0.1.0 — initial source import
 

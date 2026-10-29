@@ -137,7 +137,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 3};
+      return {protocol: 4};
     }
     if (message?.type === "CF_TRANSLATE") {
       if (!sender.tab) throw new Error("Translation requests must originate from an active webpage.");

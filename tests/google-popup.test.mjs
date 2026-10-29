@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 
 test('选择 Google 服务后请求其域名权限，密钥不传给网页', async () => {
   const nodes = new Map();
-  for (const id of ['message', 'model', 'detail', 'start', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info']) {
+  for (const id of ['message', 'model', 'detail', 'start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info']) {
     nodes.set(id, {value: '', disabled: false, textContent: '', className: '', replaceChildren() {}, addEventListener(_type, fn) { this.handler = fn; }});
   }
-  const buttons = ['start', 'stop', 'clear', 'copy-discussion', 'settings'].map(id => nodes.get(id));
+  const buttons = ['start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings'].map(id => nodes.get(id));
   const saved = {settings: {googleTranslateKey: 'google-secret'}, translationEngine: {provider: 'google', source: 'en', target: 'zh-CN'}};
   let origin;
   let started;
@@ -16,11 +16,11 @@ test('选择 Google 服务后请求其域名权限，密钥不传给网页', asy
     storage: {local: {get: async key => ({[key]: saved[key]}), set: async value => Object.assign(saved, value)}},
     permissions: {request: ({origins}) => { origin = origins[0]; return Promise.resolve(true); }},
     tabs: {query: async () => [{id: 1, url: 'https://example.com/article'}], sendMessage: async (_id, message) => {
-      if (message.type === 'CF_PING') return {ok: true, protocol: 3};
+      if (message.type === 'CF_PING') return {ok: true, protocol: 4};
       started = message;
       return {started: true, found: 1};
     }},
-    scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 3})}
+    scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 4})}
   };
   try {
     await import('../popup.js');

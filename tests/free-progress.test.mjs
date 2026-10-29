@@ -17,14 +17,14 @@ test('免费翻译逐段显示，服务失败时保留已成功译文并报告�
   }));
   function element() {
     return {dataset: {}, classList: {add() {}}, children: [], isConnected: true,
-      setAttribute() {}, append(...children) { this.children.push(...children); }, addEventListener() {}};
+      setAttribute() {}, append(...children) { this.children.push(...children); }, addEventListener() {}, remove() { this.isConnected = false; }};
   }
   const document = {title: 'Demo', body: {appendChild(node) { toast = node; }},
     querySelector: selector => selector === 'article' ? {querySelectorAll: () => paragraphs} : null,
     querySelectorAll: () => [], getElementById: () => toast, createElement: () => element()};
   const chrome = {runtime: {onMessage: {addListener: fn => { listener = fn; }}, sendMessage: async message => {
     requests.push(message);
-    return requests.length === 1 ? {ok: true, translations: {[message.entries[0].id]: '第一段译文'}} : {ok: false, fatal: true, error: 'quota exceeded'};
+    return requests.length === 2 ? {ok: false, fatal: true, error: 'quota exceeded'} : {ok: true, translations: {[message.entries[0].id]: '译文'}};
   }}};
   vm.runInNewContext(script, {document, chrome, getComputedStyle: () => ({visibility: 'visible', display: 'block'})});
   listener({type: 'CF_START', preferences: {maxBlocks: 3, messages: contentMessages('zh-CN'), engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}}}, {}, () => {});
@@ -32,8 +32,14 @@ test('免费翻译逐段显示，服务失败时保留已成功译文并报告�
   assert.equal(requests.length, 2);
   assert.ok(requests.every(request => request.entries.length === 1));
   assert.equal(rendered.length, 2);
-  assert.equal(rendered[0].children[1].textContent, '第一段译文');
+  assert.equal(rendered[0].children[1].textContent, '译文');
   assert.match(rendered[1].children[1].textContent, /quota exceeded/);
   assert.match(toast.textContent, /quota exceeded/);
   assert.match(toast.textContent, /已完成 1 段，失败 1 段/);
+  listener({type: 'CF_CONTINUE', preferences: {maxBlocks: 3, messages: contentMessages('zh-CN'), engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}}}, {}, () => {});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(requests.length, 4);
+  assert.equal(requests[2].entries[0].text, paragraphs[1].textContent);
+  assert.equal(requests[3].entries[0].text, paragraphs[2].textContent);
+  assert.equal(rendered[1].isConnected, false);
 });
