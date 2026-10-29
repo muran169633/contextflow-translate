@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Moved the initial quick translation button position to the upper-right corner.
 - Added targeted translation of the Kaggle Notebook content frame, including
   viewport tracking and short table headers. The needed navigation and content
   host permissions are requested only when translating a Kaggle Notebook.

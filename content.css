@@ -82,8 +82,8 @@
 .cf-quick-control {
   position: fixed !important;
   z-index: 2147483647 !important;
-  left: 16px !important;
-  bottom: 18px !important;
+  right: 16px !important;
+  top: 18px !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 0 !important;

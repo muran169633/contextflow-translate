@@ -65,6 +65,7 @@ test('拖动及键盘移动悬浮按钮，限制在视口并避免误触翻译',
   drag.listeners.pointermove(event(1000, 1000));
   assert.equal(control.properties.left, '280px');
   assert.equal(control.properties.top, '260px');
+  assert.equal(control.properties.right, 'auto');
   drag.listeners.pointerup(event(1000, 1000, {type:'pointerup'}));
   await drag.listeners.click(event(1000, 1000, {isTrusted:true, detail:1}));
   assert.equal(sent, 0);

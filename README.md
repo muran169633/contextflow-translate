@@ -56,7 +56,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 ### Quick translation
 
 Opening ContextFlow on an ordinary webpage displays a **Translate** button in
-the lower-left corner. Click it to translate using the saved service and
+the upper-right corner. Click it to translate using the saved service and
 language pair; use **×** to hide it. Opening the extension again restores the
 button for the current page. Drag the translation button itself to move it; the arrow keys
 move it when the button is focused (hold Shift for larger steps). Its position

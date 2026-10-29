@@ -181,6 +181,7 @@
     quickPosition = {left: x, top: y};
     quickControl.style.setProperty("left", `${x}px`, "important");
     quickControl.style.setProperty("top", `${y}px`, "important");
+    quickControl.style.setProperty("right", "auto", "important");
     quickControl.style.setProperty("bottom", "auto", "important");
   }
 
