@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reduced Google web requests by combining short paragraphs with boundary
+  validation and same-provider single-paragraph fallback. Preserved inline
+  code and short formulas where supported, and disambiguated selected quantum
+  circuit terms in English-to-Chinese translation.
 - Refined the translation popup and reading style, and added a page-level
   switch between bilingual and original views without retranslating.
 

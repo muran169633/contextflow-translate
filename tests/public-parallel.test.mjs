@@ -27,7 +27,7 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 const succeed = (request, text = '译文') => request.finish({ok: true, translations: {[request.message.entries[0].id]: text}});
 
 test('无密钥服务最多三个请求并行，完成后译文仍对应原段落', async () => {
-  const page = fixture('google-web');
+  const page = fixture('mymemory');
   await tick();
   assert.equal(page.pending.length, 3);
   succeed(page.pending[1], '第二段');

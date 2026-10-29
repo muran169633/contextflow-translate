@@ -6,10 +6,10 @@ import {contentMessages} from '../i18n.mjs';
 
 const script = await readFile(new URL('../content.js', import.meta.url), 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function page(provider, count, visibleIndexes, maxBlocks = count) {
+function page(provider, count, visibleIndexes, maxBlocks = count, paragraphText = i => `Paragraph ${i} has words.`) {
   const pending = [];
   let listener, toast;
-  const paragraphs = Array.from({length:count}, (_, i) => ({tagName:'P', textContent:`Paragraph ${i} has words.`, isConnected:true,
+  const paragraphs = Array.from({length:count}, (_, i) => ({tagName:'P', textContent:paragraphText(i), isConnected:true,
     getBoundingClientRect:() => visibleIndexes.includes(i) ? {top:100, bottom:120} : {top:-500, bottom:-480},
     closest:() => null, querySelector:() => null, getClientRects:() => [1], insertAdjacentElement(_position, node) {this.translated = node;}}));
   function element() { return {dataset:{}, classList:{add() {}}, children:[], setAttribute() {}, append(...items) {this.children.push(...items);}, addEventListener() {}}; }
@@ -28,13 +28,24 @@ test('长页面段落上限优先包含屏幕内内容并立即开始翻译', as
   await tick();
   assert.equal(fixture.result.truncated, true);
   assert.equal(fixture.result.found, 4);
-  assert.deepEqual(fixture.pending.map(job => job.message.entries[0].text), ['Paragraph 9 has words.', 'Paragraph 10 has words.', 'Paragraph 0 has words.']);
-  for (const job of fixture.pending.slice()) finish(job);
-  await tick();
-  finish(fixture.pending[3]);
+  assert.equal(fixture.pending.length, 1);
+  assert.deepEqual(Array.from(fixture.pending[0].message.entries, entry => entry.text), ['Paragraph 9 has words.', 'Paragraph 10 has words.', 'Paragraph 0 has words.', 'Paragraph 1 has words.']);
+  finish(fixture.pending[0]);
   await tick();
   assert.match(fixture.paragraphs[9].translated.children[1].textContent, /Paragraph 9/);
   assert.match(fixture.getToast().textContent, /remaining content was not translated/);
+});
+
+test('Google 网页批量按 UTF-8 字节数限长，并保持最多三个批次并发', async () => {
+  const fixture = page('google-web', 7, [], 7, i => `段落${i} ${'量'.repeat(300)}`);
+  await tick();
+  assert.equal(fixture.pending.length, 3);
+  assert.ok(fixture.pending.every(job => Buffer.byteLength(job.message.entries.map(entry => entry.text).join('\n\n'), 'utf8') <= 1200));
+  assert.ok(fixture.pending.every(job => job.message.entries.length === 1));
+  fixture.listener({type:'CF_STOP'}, {}, () => {});
+  for (const job of fixture.pending) finish(job);
+  await tick();
+  assert.equal(fixture.pending.length, 3);
 });
 
 test('微软批次最多两个并行，完成顺序不影响段落对应关系', async () => {

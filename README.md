@@ -19,8 +19,9 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 - Google Cloud Translation Basic for standard translation without an LLM; a
   Google Cloud API key and billing account are required.
 - AI translation in groups of five paragraphs, including title, article opening
-  and adjacent-paragraph context. MyMemory, Youdao, and the Google web endpoint send
-  paragraphs individually, with up to three paragraphs in flight.
+  and adjacent-paragraph context. MyMemory and Youdao send paragraphs
+  individually, with up to three paragraphs in flight. The Google web endpoint
+  can combine up to five short paragraphs, with up to three batches in flight.
 - The current viewport is selected and translated first, including when a page
   exceeds the per-run paragraph limit. Microsoft and Google Cloud send up to
   two batches of five paragraphs concurrently; AI batches remain sequential.
@@ -78,6 +79,15 @@ it is not a documented or supported Google Cloud API. Its availability, rate
 limits and future behavior are not guaranteed. It sends the selected text to
 Google in the request URL and does not apply AI context, glossary or review.
 The extension will report failures rather than silently switch services.
+Short paragraphs may be combined in a request; the extension checks paragraph
+boundaries and retries them individually when it cannot align the response.
+For short paragraphs with inline `code`, KaTeX, MathJax or MathML, the extension
+attempts to preserve those contents and reports an error if their markers are
+lost. For English-to-Chinese text on quantum-circuit pages, relevant occurrences
+of `shot`, `shots` and `Toffolis` are rewritten to `circuit run`, `circuit runs`
+and `Toffoli gates` before sending to reduce ambiguity. This is a narrow rule,
+not a guarantee of technical accuracy; long or unsupported formulas may still
+be altered. Review the translation against the original.
 
 ### 网易有道智云
 
@@ -188,9 +198,9 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Avoid feeding confidential, medical, financial, or private enterprise content to unknown API relays. The optional cache stores translated passages locally for seven days.
 - Stopping prevents new paragraphs from starting, but already-sent paragraphs
   may continue making requests for their remaining segments and consume quota
-  or incur charges. Up to three paragraphs may be in flight for MyMemory, Youdao, and
-  the unofficial Google web endpoint; Microsoft and Google Cloud can have two
-  batches (up to five paragraphs each) in flight.
+  or incur charges. MyMemory and Youdao may have three paragraphs in flight;
+  the unofficial Google web endpoint may have three batches in flight, and
+  Microsoft and Google Cloud may have two batches in flight.
 
 ## Known limitations
 
@@ -202,8 +212,8 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Translation quality depends on the configured model, prompt, glossary and source text. **No benchmark has established superiority to any other extension**.
 - The second-pass review can help but cannot guarantee correctness and uses more tokens.
 - AI requests are grouped sequentially; Microsoft and Google Cloud use up to two
-  concurrent batches. MyMemory, Youdao, and the unofficial Google web endpoint
-  use up to three concurrent paragraph requests.
+  concurrent batches. MyMemory and Youdao use up to three concurrent paragraph
+  requests; the unofficial Google web endpoint uses up to three batches.
   Requests have a 27-second timeout. Very slow local or remote LLMs may time out.
 
 ## Next engineering milestones

@@ -182,6 +182,13 @@ Object.assign(messages.es, {translationLabel:'Traducción'});
 Object.assign(messages.de, {translationLabel:'Übersetzung'});
 Object.assign(messages.ko, {translationLabel:'번역'});
 
+Object.assign(messages['zh-CN'], {preserveError:'翻译无法保留行内代码或公式，请重试此段。', googleWebQuantum:'量子电路网页中，相关英文段落的 shot 和 Toffolis 会在发送前改写为 circuit run 和 Toffoli gates，以减少歧义；仍需核对译文。'});
+Object.assign(messages.en, {preserveError:'Translation could not preserve inline code or formulas. Retry this paragraph.', googleWebQuantum:'On quantum-circuit pages, relevant English passages rewrite shot and Toffolis as circuit run and Toffoli gates before sending to reduce ambiguity. Check the translation.'});
+Object.assign(messages.ja, {preserveError:'インラインコードや数式を保持できませんでした。この段落を再試行してください。', googleWebQuantum:'量子回路ページの関連する英文では、曖昧さを減らすため shot と Toffolis を circuit run と Toffoli gates に変えて送信します。訳文を確認してください。'});
+Object.assign(messages.es, {preserveError:'No se pudo conservar el código o las fórmulas. Reintenta este párrafo.', googleWebQuantum:'En páginas de circuitos cuánticos, los textos ingleses pertinentes cambian shot y Toffolis por circuit run y Toffoli gates antes del envío para reducir ambigüedades. Revisa la traducción.'});
+Object.assign(messages.de, {preserveError:'Inline-Code oder Formeln konnten nicht erhalten werden. Versuche diesen Absatz erneut.', googleWebQuantum:'Auf Quantenschaltungsseiten werden in passenden englischen Absätzen shot und Toffolis vor dem Senden durch circuit run und Toffoli gates ersetzt. Prüfe die Übersetzung.'});
+Object.assign(messages.ko, {preserveError:'인라인 코드 또는 수식을 보존할 수 없습니다. 이 문단을 다시 시도하세요.', googleWebQuantum:'양자 회로 페이지의 관련 영어 문단은 모호성을 줄이기 위해 전송 전에 shot과 Toffolis를 circuit run과 Toffoli gates로 바꿉니다. 번역을 확인하세요.'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);
@@ -205,7 +212,7 @@ export function applyTranslations(root, language) {
   for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = translate(language, node.dataset.i18nPlaceholder);
 }
 export function contentMessages(language) {
-  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressParallel', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickMove', 'quickStarting', 'quickError'];
+  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressParallel', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickMove', 'quickStarting', 'quickError', 'preserveError'];
   return Object.fromEntries(keys.map(key => [key, translate(language, key)]));
 }
 

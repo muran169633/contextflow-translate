@@ -81,9 +81,43 @@
     return parts;
   }
 
+  function disambiguateQuantumTerms(text, context) {
+    if (state.engine?.source !== "en" || !["zh-CN", "zh-TW"].includes(state.engine?.target)) return text;
+    if (!/\bquantum\s+(?:circuits?|comput(?:er|ing|ation))\b/i.test(context?.title || "")) return text;
+    if (!/\b(?:quantum|qubits?|circuits?|toffolis?|gates?|decod(?:e|er|es|ing)|syndromes?)\b/i.test(text)) return text;
+    const adjusted = text.replace(/\bshots\b/gi, match => match[0] === "S" ? "Circuit runs" : "circuit runs")
+      .replace(/\bshot\b/gi, match => match[0] === "S" ? "Circuit run" : "circuit run")
+      .replace(/\btoffolis\b/gi, "Toffoli gates");
+    return text.length <= 1600 && adjusted.length > 1600 ? text : adjusted;
+  }
+
+  function prepareGoogleParagraph(item, context) {
+    const selector = "code, .katex, .MathJax, math";
+    if (!item.element.querySelector(selector)) return {id: item.id, text: disambiguateQuantumTerms(item.text, context), tokens: []};
+    if (typeof item.element.cloneNode !== "function") return {id: item.id, text: item.text, tokens: []};
+    const copy = item.element.cloneNode(true);
+    for (const node of copy.querySelectorAll(".cf-translation")) node.remove();
+    const tokens = [];
+    for (const node of copy.querySelectorAll(selector)) {
+      if (node.parentElement?.closest(selector)) continue;
+      const tex = node.querySelector('annotation[encoding="application/x-tex"]')?.textContent;
+      const value = tex ? `$${tex}$` : node.textContent;
+      if (!value?.trim()) continue;
+      let marker = `CFKEEP${tokens.length}TOKEN`;
+      while (item.text.includes(marker)) marker = `X${marker}`;
+      tokens.push({marker, value});
+      node.replaceWith(document.createTextNode(marker));
+    }
+    const text = cleanText(copy.textContent);
+    const adjusted = disambiguateQuantumTerms(text, context);
+    // 长段落会再次切分；只保护完整放入一次请求的段落，避免标记被切断。
+    return tokens.length && utf8Length(adjusted) <= 1200 ? {id: item.id, text: adjusted, tokens} : {id: item.id, text: item.text, tokens: []};
+  }
+
   async function translateGroup(items, context, force, token = state.token) {
-    const chunks = items.length === 1 ? splitParagraph(items[0].text) : null;
-    const groups = chunks ? chunks.map(text => [{id: items[0].id, text}]) : [items.map(item => ({id: item.id, text: item.text}))];
+    const prepared = items.map(item => state.engine?.provider === "google-web" ? prepareGoogleParagraph(item, context) : {id: item.id, text: item.text, tokens: []});
+    const chunks = prepared.length === 1 ? splitParagraph(prepared[0].text) : null;
+    const groups = chunks ? chunks.map(text => [{id: prepared[0].id, text}]) : [prepared.map(item => ({id: item.id, text: item.text}))];
     const parts = [];
     let lastResponse;
     for (const entries of groups) {
@@ -105,6 +139,15 @@
       const target = state.engine?.provider === "ai" ? state.target : state.engine?.target || "";
       const separator = /chinese|japanese|^zh\b|^ja\b/i.test(target) ? "" : " ";
       lastResponse.translations[items[0].id] = parts.map(part => part.trim()).join(separator);
+    }
+    for (const entry of prepared) {
+      let translated = lastResponse.translations[entry.id];
+      for (const {marker, value} of entry.tokens) {
+        const first = translated.indexOf(marker);
+        if (first < 0 || first !== translated.lastIndexOf(marker)) throw new Error(uiText("preserveError"));
+        translated = translated.slice(0, first) + value + translated.slice(first + marker.length);
+      }
+      lastResponse.translations[entry.id] = translated;
     }
     return lastResponse;
   }
@@ -367,13 +410,28 @@
     }
   }
 
-  async function processMachineParagraphs(items, token, batchSize, concurrency) {
+  function utf8Length(text) {
+    let total = 0;
+    for (const character of text) {
+      const point = character.codePointAt(0);
+      total += point < 0x80 ? 1 : point < 0x800 ? 2 : point < 0x10000 ? 3 : 4;
+    }
+    return total;
+  }
+
+  async function processMachineParagraphs(items, token, batchSize, concurrency, maxBytes = Infinity) {
     const priority = items.map((item, index) => ({item, index})).sort((a, b) => Number(b.item.visible) - Number(a.item.visible) || a.index - b.index);
     const jobs = [];
     for (let index = 0; index < priority.length;) {
       let count = Math.min(batchSize, priority.length - index);
       const longIndex = priority.slice(index, index + count).findIndex(entry => entry.item.text.length > 1600);
       if (longIndex >= 0) count = longIndex === 0 ? 1 : longIndex;
+      let bytes = 0;
+      for (let offset = 0; offset < count; offset++) {
+        const next = utf8Length(priority[index + offset].item.text) + (offset ? 2 : 0);
+        if (offset > 0 && bytes + next > maxBytes) { count = offset; break; }
+        bytes += next;
+      }
       jobs.push(priority.slice(index, index + count));
       index += count;
     }
@@ -415,9 +473,10 @@
 
   async function processParagraphs(items, token) {
     const provider = state.engine?.provider;
-    const individualService = ["mymemory", "google-web", "youdao"].includes(provider);
+    const individualService = ["mymemory", "youdao"].includes(provider);
+    const webService = provider === "google-web";
     const batchService = ["google", "microsoft"].includes(provider);
-    if (individualService || batchService) await processMachineParagraphs(items, token, individualService ? 1 : 5, individualService ? 3 : 2);
+    if (individualService || batchService || webService) await processMachineParagraphs(items, token, individualService ? 1 : 5, individualService || webService ? 3 : 2, webService ? 1200 : Infinity);
     else {
       const jobs = [];
       for (let index = 0; index < items.length;) {
@@ -509,7 +568,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 14, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 15, running: state.running, count: state.total, displayMode: state.displayMode});
     } else if (message?.type === "CF_SET_DISPLAY") {
       if (!["bilingual", "original"].includes(message.mode)) {
         sendResponse({ok: false});

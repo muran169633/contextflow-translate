@@ -10,8 +10,8 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
   const saved = {};
   let requested;
   let started;
-  let pingVersion = 14;
-  let backgroundVersion = 14;
+  let pingVersion = 15;
+  let backgroundVersion = 15;
   let starts = 0;
   let quickShown = false;
   let permissionFailure = false;
@@ -54,7 +54,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /刷新网页/);
-    pingVersion = 14;
+    pingVersion = 15;
     backgroundVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));

@@ -17,3 +17,20 @@ test('免密钥 Google 请求通过后台发送且不需要模型', async () => 
   assert.equal(result.translations['cf-1'], '你好。');
   assert.equal(new URL(called).hostname, 'translate.googleapis.com');
 });
+
+test('Google 批量结果缓存后按新的段落 ID 安全映射', async () => {
+  store.settings.cache = true;
+  let calls = 0;
+  globalThis.fetch = async url => {
+    calls++;
+    const text = new URL(url).searchParams.get('q');
+    return {ok:true,json:async () => [[['第一段。\n\n第二段。',text]]]};
+  };
+  const run = entries => new Promise(resolve => listener({type:'CF_TRANSLATE', entries, context:{}, engine:store.translationEngine}, {id:'test',tab:{id:1}}, resolve));
+  const first = await run([{id:'cf-1',text:'First paragraph.'},{id:'cf-2',text:'Second paragraph.'}]);
+  const second = await run([{id:'cf-20',text:'First paragraph.'},{id:'cf-21',text:'Second paragraph.'}]);
+  assert.equal(first.ok, true);
+  assert.equal(second.cacheHit, true);
+  assert.deepEqual(second.translations, {'cf-20':'第一段。','cf-21':'第二段。'});
+  assert.equal(calls,1);
+});
