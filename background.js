@@ -1,9 +1,10 @@
 import {
-  DEFAULT_SETTINGS, normalizeEndpoint, hostPermissionPattern,
+  DEFAULT_SETTINGS,
   makeTranslationMessages, makeReviewMessages,
   parseModelTranslations, normalizeEntries
 } from "./core.mjs";
 import {FREE_ORIGIN, normalizeEngine, translateFree} from "./free-translate.mjs";
+import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
 
 // Keep API credentials away from content scripts. Options/popup/service worker remain trusted.
 chrome.storage.local.setAccessLevel({accessLevel: "TRUSTED_CONTEXTS"}).catch(() => {});
@@ -23,29 +24,18 @@ function safeContext(context) {
 }
 
 async function modelRequest(messages, settings) {
-  const endpoint = normalizeEndpoint(settings.endpoint);
-  const pattern = hostPermissionPattern(endpoint);
+  const {url, headers, body: requestBody} = buildModelRequest(messages, settings);
+  const pattern = modelPermission(settings);
   const allowed = await chrome.permissions.contains({origins: [pattern]});
   if (!allowed) throw new Error("API host access is not granted. Open Settings and save the connection again.");
-  if (!String(settings.model || "").trim()) throw new Error("Set a model ID in Settings first.");
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 27000);
-  const headers = {"Content-Type": "application/json"};
-  if (String(settings.apiKey || "").trim()) {
-    headers.Authorization = `Bearer ${settings.apiKey.trim()}`;
-  }
 
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        model: settings.model.trim(),
-        messages,
-        temperature: 0.1,
-        stream: false
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal
     });
     const body = await response.text();
@@ -60,10 +50,8 @@ async function modelRequest(messages, settings) {
     if (body.length > 400000) throw new Error("API response is unexpectedly large.");
     let data;
     try { data = JSON.parse(body); }
-    catch { throw new Error("API returned non-JSON data. Use an OpenAI-compatible chat/completions endpoint."); }
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) throw new Error("API response is missing choices[0].message.content.");
-    return content;
+    catch { throw new Error("API returned non-JSON data. Check the provider and endpoint."); }
+    return parseModelResponse(data, settings);
   } catch (error) {
     if (error?.name === "AbortError") throw new Error("API timed out after 27 seconds. Use a faster model or reduce server load.");
     throw error;
@@ -83,9 +71,9 @@ async function translationWithCache(entries, context, force = false, forceAi = f
   const {translationEngine} = await chrome.storage.local.get("translationEngine");
   const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(translationEngine, !!String(settings.model || "").trim());
   if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
-  const url = engine.provider === "ai" ? normalizeEndpoint(settings.endpoint) : FREE_ORIGIN;
+  const url = engine.provider === "ai" ? modelEndpoint(settings) : FREE_ORIGIN;
   const key = await sha256(JSON.stringify({
-    version: 2, engine, endpoint: url, model: settings.model, source: settings.source,
+    version: 3, engine, provider: engine.provider === "ai" ? providerName(settings) : "mymemory", endpoint: url, model: settings.model, source: settings.source,
     target: settings.target, style: settings.style, glossary: settings.glossary,
     review: !!settings.review, context, entries
   }));

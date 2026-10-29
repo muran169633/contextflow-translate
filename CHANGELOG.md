@@ -9,6 +9,8 @@
   English, Japanese and Spanish, independent of translation settings.
 - Redesigned the popup, added German and Korean interfaces, and added anonymous
   MyMemory translation with selectable source and target languages.
+- Added native Gemini and Claude API support with per-provider connection
+  settings; existing OpenAI-compatible configurations remain supported.
 
 ## 0.1.0 — initial source import
 

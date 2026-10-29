@@ -1,9 +1,28 @@
-import {DEFAULT_SETTINGS, normalizeEndpoint, hostPermissionPattern} from "./core.mjs";
+import {DEFAULT_SETTINGS} from "./core.mjs";
+import {MODEL_BASE_URLS, modelPermission, providerBase, providerName} from "./model-adapters.mjs";
 import {setupLanguage, translate} from "./ui-language.mjs";
 import {localizeError} from "./i18n.mjs";
 let language = "en";
 const t = (key, values) => translate(language, key, values);
 const $ = id => document.getElementById(id);
+let currentProvider = "compatible";
+let connections = {};
+
+function rememberConnection() {
+  connections[currentProvider] = {
+    endpoint: $("endpoint").value.trim(), model: $("model").value.trim(), apiKey: $("apiKey").value.trim()
+  };
+}
+function showConnection(provider) {
+  currentProvider = provider;
+  const draft = connections[provider] || {};
+  $("aiProvider").value = provider;
+  $("endpoint").readOnly = provider !== "compatible";
+  $("endpoint").value = provider === "compatible" ? (draft.endpoint || MODEL_BASE_URLS.compatible) : MODEL_BASE_URLS[provider];
+  $("model").value = draft.model || "";
+  $("apiKey").value = draft.apiKey || "";
+  $("endpointHelp").textContent = t(provider === "compatible" ? "endpointHelp" : "nativeEndpointHelp");
+}
 
 function status(text, kind = "info") {
   $("message").textContent = text;
@@ -11,7 +30,10 @@ function status(text, kind = "info") {
 }
 function settingsFromForm() {
   const maxBlocks = Number.parseInt($("maxBlocks").value, 10);
+  rememberConnection();
   return {
+    aiProvider: currentProvider,
+    connections,
     endpoint: $("endpoint").value.trim(),
     model: $("model").value.trim(),
     apiKey: $("apiKey").value.trim(),
@@ -27,7 +49,11 @@ function settingsFromForm() {
 async function restore() {
   const data = await chrome.storage.local.get("settings");
   const s = {...DEFAULT_SETTINGS, ...(data.settings || {})};
-  for (const name of ["endpoint", "model", "apiKey", "source", "target", "style", "glossary", "maxBlocks"]) {
+  currentProvider = providerName(s);
+  connections = {...(s.connections || {})};
+  connections[currentProvider] = {endpoint: s.endpoint, model: s.model, apiKey: s.apiKey};
+  showConnection(currentProvider);
+  for (const name of ["source", "target", "style", "glossary", "maxBlocks"]) {
     $(name).value = s[name];
   }
   $("review").checked = !!s.review;
@@ -39,8 +65,8 @@ async function saveAndMaybeTest(test) {
   save.disabled = testButton.disabled = true;
   try {
     const data = settingsFromForm();
-    normalizeEndpoint(data.endpoint);
-    const pattern = hostPermissionPattern(data.endpoint);
+    const endpoint = providerBase(data);
+    const pattern = modelPermission(data);
     if (test && !data.model) throw new Error(t("needTestModel"));
     // Request exactly one origin, even though optional patterns cover HTTPS broadly.
     // Request directly from this button's user gesture.
@@ -48,7 +74,7 @@ async function saveAndMaybeTest(test) {
     if (!permitted) throw new Error(t("permissionDenied"));
     await chrome.storage.local.set({settings: data});
     if (!test) {
-      status(t("saved", {endpoint: normalizeEndpoint(data.endpoint)}), "success");
+      status(t("saved", {endpoint}), "success");
       return;
     }
     status(t("testing"), "info");
@@ -63,6 +89,10 @@ async function saveAndMaybeTest(test) {
 }
 $("save").addEventListener("click", () => saveAndMaybeTest(false));
 $("test").addEventListener("click", () => saveAndMaybeTest(true));
+$("aiProvider").addEventListener("change", () => {
+  rememberConnection();
+  showConnection($("aiProvider").value);
+});
 $("clearCache").addEventListener("click", async () => {
   try {
     await chrome.storage.local.remove("translationCache");
@@ -71,4 +101,7 @@ $("clearCache").addEventListener("click", async () => {
 });
 void restore().catch(error => status(String(error?.message || error), "error"));
 
-void setupLanguage(next => { language = next; }).catch(error => status(String(error?.message || error), "error"));
+void setupLanguage(next => {
+  language = next;
+  $("endpointHelp").textContent = t(currentProvider === "compatible" ? "endpointHelp" : "nativeEndpointHelp");
+}).catch(error => status(String(error?.message || error), "error"));

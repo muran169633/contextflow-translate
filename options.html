@@ -18,9 +18,18 @@
         <h2 class="section-heading" data-i18n="connection">1. AI connection</h2>
         <p class="section-help" data-i18n="connectionHelp">OpenAI-compatible endpoints.</p>
         <div class="field">
+          <label for="aiProvider" data-i18n="aiApiType">Model API type</label>
+          <select id="aiProvider">
+            <option value="compatible" data-i18n="compatibleProvider">OpenAI-compatible API (multiple providers)</option>
+            <option value="gemini">Google Gemini API</option>
+            <option value="anthropic">Anthropic Claude API</option>
+          </select>
+          <small data-i18n="providerSeparate">Each API type keeps its own model, endpoint and key.</small>
+        </div>
+        <div class="field">
           <label for="endpoint" data-i18n="endpoint">API base URL</label>
           <input id="endpoint" type="url" placeholder="https://api.openai.com/v1" spellcheck="false" autocomplete="off">
-          <small data-i18n="endpointHelp"></small>
+          <small id="endpointHelp" data-i18n="endpointHelp"></small>
         </div>
         <div class="form-grid">
           <div class="field">

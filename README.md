@@ -1,6 +1,6 @@
 # ContextFlow Translate 0.1.0
 
-A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the anonymous MyMemory service or your own OpenAI-compatible AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the anonymous MyMemory service or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
@@ -11,6 +11,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the 
   Availability and quality depend on the language pair and the provider.
 - Translation in groups of five paragraphs, including title, article opening and adjacent-paragraph context.
 - OpenAI-compatible `chat/completions` API with an arbitrary HTTPS base URL, including many personal API gateways; local HTTP model servers on `localhost` / `127.0.0.1`.
+- Native Google Gemini `generateContent` and Anthropic Claude Messages APIs.
+  Each API type stores its own model name and key separately.
 - Up to 60 preferred glossary terms using `source => target` syntax.
 - Faithful, technical, academic or natural translation styles.
 - Optional second AI review, aimed at preserving negations, numbers, units and qualifiers.
@@ -31,7 +33,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the 
 3. Click **Load unpacked** and select the directory containing `manifest.json`.
 4. Open an ordinary `https://` article and click the ContextFlow toolbar icon.
 5. Select **MyMemory · free**, choose the source and target languages, and click **Translate page**. On first use, allow access to the MyMemory API. The source language must be selected explicitly.
-6. Alternatively select **Your AI model**, open **Settings**, enter the API base URL, model ID and optional API key, then save. **Save & test API** sends a short test and may incur a provider charge.
+6. Alternatively select **Your AI model** and open **Settings**. Choose an API type: **OpenAI-compatible** for any provider exposing `chat/completions`, **Google Gemini API**, or **Anthropic Claude API**. Enter the model ID and its provider's API key; for compatible services also enter the base URL. Save, then return to the page. **Save & test API** sends a short test and may incur a provider charge.
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
 
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
@@ -61,8 +63,12 @@ Configure the address your gateway actually exposes; do not blindly paste this e
 - OpenAI-compatible remote gateway: `https://your-gateway.example/v1`
 - Local Ollama-compatible endpoint: `http://127.0.0.1:11434/v1`
 - Full URL format also accepted: `https://your-gateway.example/v1/chat/completions`
+- For DeepSeek's compatible API, use its full endpoint
+  `https://api.deepseek.com/chat/completions` and a model available to your account.
+- Qwen and other compatible services can be used with their provider's base URL,
+  model ID and API key; endpoints may vary by account and region.
 
-The extension appends `/chat/completions` if it was not included. It does **not** support the OpenAI Responses API, provider-specific SDK endpoints, or models that do not expose chat completions.
+For the compatible API type, the extension appends `/chat/completions` if it was not included. Gemini and Claude can instead use their own API types and fixed official endpoints. Other provider-specific protocols and the OpenAI Responses API are not supported. Provider model access, JSON output support, availability and charges depend on the selected service and account.
 
 ## Glossary examples
 
@@ -118,6 +124,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 ```text
 popup.html/js            Click-to-translate and remove overlays
 free-translate.mjs       MyMemory translation and language choices
+model-adapters.mjs       Compatible, Gemini and Claude API request adapters
 discussion.js            Read Kaggle or structured discussion data
 discussion-core.mjs      Format authors and nested replies for the clipboard
 i18n.mjs/ui-language.mjs Interface translations and saved language selection
