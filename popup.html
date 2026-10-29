@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ContextFlow Translate</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup-body">
+  <header class="top">
+    <div class="brand-row"><div class="brand-logo">CF</div><div><h1>ContextFlow</h1><div class="version">High-fidelity bilingual translator 0.1</div></div></div>
+    <p>Translate with context, terminology, and an AI model you control.</p>
+  </header>
+  <main class="panel">
+    <div class="card">
+      <div class="eyebrow">ACTIVE AI MODEL</div>
+      <div class="value" id="model">Loading...</div>
+      <div class="muted" id="detail">Connection settings</div>
+    </div>
+    <div class="actions">
+      <button type="button" class="button primary" id="start">Translate page / &#32763;&#35793;&#32593;&#39029;</button>
+      <div class="two">
+        <button type="button" class="button" id="stop">Stop / &#20572;&#27490;</button>
+        <button type="button" class="button danger" id="clear">Remove / &#28165;&#38500;</button>
+      </div>
+      <button type="button" class="button" id="settings">Settings / &#35774;&#32622;</button>
+    </div>
+    <div id="message" class="message" role="status">Nothing is sent until you click Translate.</div>
+    <div class="footer"><span class="muted">Original text stays intact.</span><a href="https://developer.chrome.com/docs/extensions/" target="_blank" rel="noreferrer">Chrome extensions</a></div>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
