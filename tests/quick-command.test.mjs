@@ -17,7 +17,7 @@ globalThis.chrome = {
     messages.push({tabId, ...message});
     if (message.type === 'CF_PING') {
       if (!installed) throw new Error('No receiver');
-      return {ok: true, protocol: 11, running};
+      return {ok: true, protocol: 12, running};
     }
     if (message.type === 'CF_QUICK_SHOW' || message.type === 'CF_QUICK_NOTICE') return {ok: true};
     if (message.type === 'CF_START') return {ok: true, started: true, found: 1};

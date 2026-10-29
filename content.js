@@ -38,7 +38,6 @@
   function getParagraphs(maxBlocks, excluded = new Set()) {
     const root = rootElement();
     const items = [];
-    let truncated = false;
     const limit = Math.max(1, Math.min(150, Number(maxBlocks) || 50));
     for (const element of root.querySelectorAll(BLOCK_SELECTOR)) {
       if (excluded.has(element)) continue;
@@ -53,10 +52,16 @@
       if (value.length < minimum || !/\p{L}/u.test(value)) continue;
       if (/^(https?:\/\/\S+|[\w-]+\.[\w-]+)$/.test(value)) continue;
       if ((value.match(/[{};=<>]/g) || []).length > value.length / 8) continue;
-      if (items.length >= limit) { truncated = true; break; }
-      items.push({id: `cf-${items.length + 1}`, element, text: value});
+      const rect = element.getBoundingClientRect?.();
+      const visible = !!rect && Number.isFinite(globalThis.innerHeight) && rect.bottom > 0 && rect.top < globalThis.innerHeight;
+      items.push({element, text: value, visible});
     }
-    return {items, truncated};
+    const truncated = items.length > limit;
+    // 先选择当前视口内的段落，再按文档顺序保留上下文。
+    const selected = new Set([...items.filter(item => item.visible), ...items.filter(item => !item.visible)].slice(0, limit));
+    const chosen = items.filter(item => selected.has(item));
+    chosen.forEach((item, index) => { item.id = `cf-${index + 1}`; });
+    return {items: chosen, truncated};
   }
 
   function splitParagraph(value) {
@@ -290,24 +295,38 @@
     }
   }
 
-  async function processPublicParagraphs(items, token) {
+  async function processMachineParagraphs(items, token, batchSize, concurrency) {
+    const priority = items.map((item, index) => ({item, index})).sort((a, b) => Number(b.item.visible) - Number(a.item.visible) || a.index - b.index);
+    const jobs = [];
+    for (let index = 0; index < priority.length;) {
+      let count = Math.min(batchSize, priority.length - index);
+      const longIndex = priority.slice(index, index + count).findIndex(entry => entry.item.text.length > 1600);
+      if (longIndex >= 0) count = longIndex === 0 ? 1 : longIndex;
+      jobs.push(priority.slice(index, index + count));
+      index += count;
+    }
     let next = 0;
     showToast(uiText("progressParallel", {done: 0, total: items.length, failed: 0}));
     async function worker() {
       while (!state.stop && state.token === token) {
-        const index = next++;
-        if (index >= items.length) return;
-        const item = items[index];
+        const job = jobs[next++];
+        if (!job) return;
+        const group = job.map(entry => entry.item);
         try {
-          const response = await translateGroup([item], getContext(items, index, index + 1), false, token);
+          const first = job[0].index;
+          const response = await translateGroup(group, getContext(items, first, first + 1), false, token);
           if (state.stop || state.token !== token || !response) return;
-          renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
-          item.completed = true;
-          state.done++;
+          for (const item of group) {
+            renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
+            item.completed = true;
+            state.done++;
+          }
         } catch (error) {
           if (state.stop || state.token !== token) return;
-          renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
-          state.failed++;
+          for (const item of group) {
+            renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
+            state.failed++;
+          }
           if (error.fatal) {
             state.failureReason = String(error.message || error);
             state.stop = true;
@@ -317,39 +336,48 @@
         if (!state.stop && state.token === token) showToast(uiText("progressParallel", {done: state.done, total: items.length, failed: state.failed}));
       }
     }
-    await Promise.all(Array.from({length: Math.min(3, items.length)}, () => worker()));
+    await Promise.all(Array.from({length: Math.min(concurrency, jobs.length)}, () => worker()));
   }
 
   async function processParagraphs(items, token) {
-    const publicService = ["mymemory", "google-web", "youdao"].includes(state.engine?.provider);
-    if (publicService) await processPublicParagraphs(items, token);
-    else for (let index = 0; index < items.length;) {
-      if (state.stop || state.token !== token) break;
-      let group = items.slice(index, index + 5);
-      const longIndex = group.findIndex(item => item.text.length > 1600);
-      if (longIndex >= 0) group = longIndex === 0 ? [group[0]] : group.slice(0, longIndex);
-      showToast(uiText("translating", {from: index + 1, to: index + group.length, total: items.length}));
-      try {
-        const response = await translateGroup(group, getContext(items, index, index + group.length), false, token);
+    const provider = state.engine?.provider;
+    const individualService = ["mymemory", "google-web", "youdao"].includes(provider);
+    const batchService = ["google", "microsoft"].includes(provider);
+    if (individualService || batchService) await processMachineParagraphs(items, token, individualService ? 1 : 5, individualService ? 3 : 2);
+    else {
+      const jobs = [];
+      for (let index = 0; index < items.length;) {
+        let group = items.slice(index, index + 5);
+        const longIndex = group.findIndex(item => item.text.length > 1600);
+        if (longIndex >= 0) group = longIndex === 0 ? [group[0]] : group.slice(0, longIndex);
+        jobs.push({index, group, visible: group.some(item => item.visible)});
+        index += group.length;
+      }
+      jobs.sort((a, b) => Number(b.visible) - Number(a.visible) || a.index - b.index);
+      for (const {index, group} of jobs) {
         if (state.stop || state.token !== token) break;
-        if (!response) break;
-        for (const item of group) {
-          renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
-          item.completed = true;
-          state.done++;
-        }
-      } catch (error) {
-        if (state.stop || state.token !== token) break;
-        for (const item of group) {
-          renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
-          state.failed++;
-        }
-        if (error.fatal) {
-          state.failureReason = String(error.message || error);
-          state.stop = true;
+        showToast(uiText("translating", {from: index + 1, to: index + group.length, total: items.length}));
+        try {
+          const response = await translateGroup(group, getContext(items, index, index + group.length), false, token);
+          if (state.stop || state.token !== token) break;
+          if (!response) break;
+          for (const item of group) {
+            renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
+            item.completed = true;
+            state.done++;
+          }
+        } catch (error) {
+          if (state.stop || state.token !== token) break;
+          for (const item of group) {
+            renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
+            state.failed++;
+          }
+          if (error.fatal) {
+            state.failureReason = String(error.message || error);
+            state.stop = true;
+          }
         }
       }
-      index += group.length;
     }
     if (state.token !== token) return;
     state.running = false;
@@ -398,7 +426,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 11, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 12, running: state.running, count: state.total});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});

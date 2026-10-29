@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prioritized the visible part of the page for all providers and added bounded
+  concurrent batches for Microsoft and Google Cloud Translation.
 - Added immediate feedback for quick translation and reduced accidental drag
   detection during ordinary clicks.
 

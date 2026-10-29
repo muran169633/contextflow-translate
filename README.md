@@ -20,6 +20,9 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 - AI translation in groups of five paragraphs, including title, article opening
   and adjacent-paragraph context. MyMemory, Youdao, and the Google web endpoint send
   paragraphs individually, with up to three paragraphs in flight.
+- The current viewport is selected and translated first, including when a page
+  exceeds the per-run paragraph limit. Microsoft and Google Cloud send up to
+  two batches of five paragraphs concurrently; AI batches remain sequential.
 - OpenAI-compatible `chat/completions` API with an arbitrary HTTPS base URL, including many personal API gateways; local HTTP model servers on `localhost` / `127.0.0.1`.
 - Native Google Gemini `generateContent` and Anthropic Claude Messages APIs.
   Each API type stores its own model name and key separately.
@@ -183,17 +186,19 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Stopping prevents new paragraphs from starting, but already-sent paragraphs
   may continue making requests for their remaining segments and consume quota
   or incur charges. Up to three paragraphs may be in flight for MyMemory, Youdao, and
-  the unofficial Google web endpoint.
+  the unofficial Google web endpoint; Microsoft and Google Cloud can have two
+  batches (up to five paragraphs each) in flight.
 
 ## Known limitations
 
 - Ordinary article-like webpages only. Chrome/Edge internal pages, browser-owned PDF viewers, scanned images and embedded video subtitles are not supported.
-- Scans at most 150 content blocks per click (default 50); content is not continuously translated on scroll or SPA route changes.
+- Translates at most 150 content blocks per click (default 50); content is not continuously translated on scroll or SPA route changes.
 - Complex page layouts can still render overlays imperfectly; text extraction may select unwanted items or miss nonstandard blocks.
 - Translation quality depends on the configured model, prompt, glossary and source text. **No benchmark has established superiority to any other extension**.
 - The second-pass review can help but cannot guarantee correctness and uses more tokens.
-- AI, Microsoft and Google Cloud requests are grouped sequentially; MyMemory, Youdao, and the
-  unofficial Google web endpoint use up to three concurrent paragraph requests.
+- AI requests are grouped sequentially; Microsoft and Google Cloud use up to two
+  concurrent batches. MyMemory, Youdao, and the unofficial Google web endpoint
+  use up to three concurrent paragraph requests.
   Requests have a 27-second timeout. Very slow local or remote LLMs may time out.
 
 ## Next engineering milestones
