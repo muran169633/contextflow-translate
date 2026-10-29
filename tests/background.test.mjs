@@ -71,3 +71,11 @@ test("background rejects bad batches and extension pages masquerading as tabs", 
   assert.equal(internal.ok, false);
   assert.match(internal.error, /active webpage/);
 });
+
+test("API test still checks the configured AI model when free mode is selected", async () => {
+  values.translationEngine = {provider: "mymemory", source: "en", target: "zh-CN"};
+  const response = await send("CF_TEST", undefined, {id: "testing-extension"});
+  assert.equal(response.ok, true);
+  assert.match(response.sample, /^TRANSLATED:/);
+  assert.equal(prompts.at(-1).model, "demo-model");
+});

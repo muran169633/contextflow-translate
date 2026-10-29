@@ -141,7 +141,11 @@
           context: getContext(items, index, index + group.length)
         });
         if (state.stop || state.token !== token) break;
-        if (!response?.ok) throw new Error(response?.error || "Unexpected translation failure");
+        if (!response?.ok) {
+          const error = new Error(response?.error || "Unexpected translation failure");
+          error.fatal = response?.fatal === true;
+          throw error;
+        }
         for (const item of group) {
           renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
           state.done++;
@@ -152,6 +156,7 @@
           renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
           state.failed++;
         }
+        if (error.fatal) state.stop = true;
       }
     }
     if (state.token !== token) return;

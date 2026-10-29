@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 
 test("复制按钮读取当前标签并写入剪贴板", async () => {
   const elements = new Map();
-  for (const id of ["message", "model", "detail", "start", "stop", "clear", "copy-discussion", "settings", "uiLanguage"]) {
-    elements.set(id, {textContent: "", className: "", disabled: false, addEventListener(_type, fn) { this.click = fn; }});
+  for (const id of ["message", "model", "detail", "start", "stop", "clear", "copy-discussion", "settings", "uiLanguage", "provider", "freeSource", "freeTarget", "free-controls", "ai-controls"]) {
+    elements.set(id, {textContent: "", className: "", disabled: false, replaceChildren() {}, addEventListener(_type, fn) { this.click = fn; }});
   }
   const buttons = ["start", "stop", "clear", "copy-discussion", "settings"].map(id => elements.get(id));
   const copied = Promise.withResolvers();
   let installed;
-  globalThis.document = {documentElement: {}, getElementById: id => elements.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
+  globalThis.document = {documentElement: {}, createElement: () => ({}), getElementById: id => elements.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
   Object.defineProperty(globalThis, "navigator", {configurable: true, value: {language: 'zh-CN', clipboard: {writeText: async text => copied.resolve(text)}}});
   globalThis.chrome = {
     storage: {local: {get: async () => ({})}},

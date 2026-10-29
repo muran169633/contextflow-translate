@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {applyTranslations, contentMessages, localizeError, resolveLanguage, supportedLanguages, translate, translationKeys} from '../i18n.mjs';
 import {setupLanguage} from '../ui-language.mjs';
 
-test('所有界面与网页提示键均有四种语言的文案', async () => {
+test('所有界面与网页提示键均有六种语言的文案', async () => {
   const markup = (await Promise.all(['popup.html', 'options.html'].map(file => readFile(new URL(`../${file}`, import.meta.url), 'utf8')))).join('\n');
   const keys = [...markup.matchAll(/data-i18n(?:-placeholder)?="([^"]+)"/g)].map(match => match[1]);
   keys.push(...Object.keys(contentMessages('en')), 'copied', 'incomplete', 'kaggleHttp', 'structuredWarning', 'unsupported', 'saved', 'connected');

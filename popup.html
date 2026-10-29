@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,28 +7,33 @@
   <link rel="stylesheet" href="ui.css">
 </head>
 <body class="popup-body">
-  <header class="top">
-    <div class="brand-row"><div class="brand-logo">CF</div><div><h1>ContextFlow</h1><div class="version" data-i18n="popupSubtitle">High-fidelity bilingual translator</div></div></div>
-    <p data-i18n="popupIntro">Translate with context, terminology, and an AI model you control.</p>
+  <header class="popup-header">
+    <div class="popup-brand"><div class="popup-logo">C<span>F</span></div><div><h1>ContextFlow</h1><div class="popup-kicker" data-i18n="popupSubtitle">Bilingual translator</div></div></div>
+    <div class="header-mark">✦</div>
   </header>
-  <main class="panel">
-    <div class="field language-field"><label for="uiLanguage" data-i18n="language">Interface language</label><select id="uiLanguage"><option value="zh-CN">简体中文</option><option value="en">English</option><option value="ja">日本語</option><option value="es">Español</option></select></div>
-    <div class="card">
-      <div class="eyebrow" data-i18n="activeModel">Active AI model</div>
-      <div class="value" id="model" data-i18n="loading">Loading…</div>
-      <div class="muted" id="detail">Connection settings</div>
-    </div>
-    <div class="actions">
-      <button type="button" class="button primary" id="start" data-i18n="start">Translate page</button>
-      <button type="button" class="button" id="copy-discussion" data-i18n="copy">Copy discussion</button>
-      <div class="two">
-        <button type="button" class="button" id="stop" data-i18n="stop">Stop</button>
-        <button type="button" class="button danger" id="clear" data-i18n="clear">Remove translations</button>
+  <main class="popup-main">
+    <div class="popup-intro"><div><p class="popup-overline">CONTEXTFLOW / 01</p><h2 data-i18n="workspace">Your reading companion</h2></div><span class="intro-spark">✳</span></div>
+    <section class="popup-card" aria-label="Translation">
+      <div class="card-heading"><div class="section-icon">↗</div><div><strong data-i18n="engineTitle">Translation engine</strong><p data-i18n="engineSubtitle">Choose how to translate</p></div></div>
+      <div class="field"><label for="provider" data-i18n="provider">Provider</label><select id="provider" disabled><option value="mymemory" data-i18n="freeProvider">MyMemory · free</option><option value="ai" data-i18n="aiProvider">Your AI model</option></select></div>
+      <div id="free-controls">
+        <div class="language-pair"><div class="field"><label for="freeSource" data-i18n="source">Source language</label><select id="freeSource" disabled></select></div><span class="pair-arrow">→</span><div class="field"><label for="freeTarget" data-i18n="target">Target language</label><select id="freeTarget" disabled></select></div></div>
+        <div class="provider-note"><span class="note-dot"></span><span data-i18n="freeNote">No account required. Anonymous use is limited to 5,000 characters per day.</span></div>
+        <p class="provider-privacy" data-i18n="freePrivacy">Text is sent to MyMemory, which may retain and share it with service partners. Avoid confidential content.</p>
+        <p class="provider-privacy" data-i18n="notSupportedFree">Free translation does not use context, glossaries, or second-pass review.</p>
+        <a class="provider-link" href="https://mymemory.translated.net/terms-and-conditions" target="_blank" rel="noreferrer" data-i18n="providerTerms">Provider terms &amp; privacy</a>
       </div>
-      <button type="button" class="button" id="settings" data-i18n="settings">Settings</button>
-    </div>
+      <div id="ai-controls" hidden><div class="model-line"><span data-i18n="activeModel">Active AI model</span><strong id="model" data-i18n="loading">Loading…</strong><span id="detail"></span></div><p class="provider-privacy" data-i18n="aiNote">Configure your model and endpoint in Settings.</p></div>
+      <button type="button" class="button primary popup-primary" id="start" disabled><span>✦</span><span data-i18n="start">Translate page</span><span class="button-arrow">↗</span></button>
+    </section>
+    <section class="popup-card tools-card">
+      <div class="card-heading"><div class="section-icon peach">≡</div><div><strong data-i18n="toolsTitle">Page tools</strong><p data-i18n="toolsSubtitle">Keep what matters</p></div></div>
+      <button type="button" class="button tool-button" id="copy-discussion"><span class="tool-glyph">▤</span><span data-i18n="copy">Copy discussion</span><span class="button-arrow">↗</span></button>
+      <div class="two"><button type="button" class="button" id="stop" data-i18n="stop">Stop</button><button type="button" class="button" id="clear" data-i18n="clear">Remove translations</button></div>
+    </section>
     <div id="message" class="message" role="status" data-i18n="popupHint">Page content is not sent until you click Translate.</div>
-    <div class="footer"><span class="muted" data-i18n="original">Original text stays intact.</span><a href="https://developer.chrome.com/docs/extensions/" target="_blank" rel="noreferrer" data-i18n="docs">Chrome extensions</a></div>
+    <div class="popup-bottom"><div class="field language-field"><label for="uiLanguage" data-i18n="language">Interface language</label><select id="uiLanguage"><option value="zh-CN">简体中文</option><option value="en">English</option><option value="ja">日本語</option><option value="es">Español</option><option value="de">Deutsch</option><option value="ko">한국어</option></select></div><button type="button" class="settings-link" id="settings"><span>⚙</span> <span data-i18n="settings">Settings</span></button></div>
+    <footer class="popup-footer"><span>CONTEXTFLOW</span><span data-i18n="original">Original text stays intact.</span></footer>
   </main>
   <script type="module" src="popup.js"></script>
 </body>

@@ -1,12 +1,14 @@
 # ContextFlow Translate 0.1.0
 
-A small, original Chrome / Edge Manifest V3 bilingual webpage translation extension. It prioritizes **meaning over fluency** and lets you choose your own OpenAI-compatible AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the anonymous MyMemory service or your own OpenAI-compatible AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
 ## Supported in this MVP
 
 - Bilingual paragraph translation, with the original webpage preserved.
+- A no-account MyMemory mode with 30 selectable source and target languages.
+  Availability and quality depend on the language pair and the provider.
 - Translation in groups of five paragraphs, including title, article opening and adjacent-paragraph context.
 - OpenAI-compatible `chat/completions` API with an arbitrary HTTPS base URL, including many personal API gateways; local HTTP model servers on `localhost` / `127.0.0.1`.
 - Up to 60 preferred glossary terms using `source => target` syntax.
@@ -15,8 +17,8 @@ A small, original Chrome / Edge Manifest V3 bilingual webpage translation extens
 - Per-paragraph retry; stop translation; remove all overlays.
 - Optional 7-day local cache (up to 200 batched results).
 - On-demand `activeTab` access: no always-on webpage monitoring.
-- Interface language selection: Simplified Chinese, English, Japanese, or
-  Spanish. The selection is stored locally and is independent of the
+- Interface language selection: Simplified Chinese, English, Japanese,
+  Spanish, German, or Korean. The selection is stored locally and is independent of the
   translation target language.
 - Copy Kaggle discussions, including replies returned in collapsed threads,
   with author and direct-reply labels; structured comments on other sites are
@@ -27,11 +29,12 @@ A small, original Chrome / Edge Manifest V3 bilingual webpage translation extens
 1. Extract the ZIP to a permanent folder. Do **not** select the ZIP itself.
 2. Open `chrome://extensions` (or `edge://extensions`). Enable **Developer mode**.
 3. Click **Load unpacked** and select the directory containing `manifest.json`.
-4. Click the ContextFlow toolbar icon, then **Settings**.
-5. Enter the API base URL, model ID and optional API key. Example API base URL: `https://api.openai.com/v1`. The model must support OpenAI-style **chat completions**.
-6. Click **Save & test API**; Chrome will ask for permission to contact only the configured API host. The test translates a short sentence and may incur a tiny provider charge.
-7. Open any ordinary `https://` article, click the extension icon and choose **Translate page**. Look for translations underneath the original paragraphs and a status indicator in the bottom-right corner.
-8. Use **Stop** to halt future batches, **Remove** to clear overlays, or **Retry** to retranslate an individual paragraph without cache.
+4. Open an ordinary `https://` article and click the ContextFlow toolbar icon.
+5. Select **MyMemory · free**, choose the source and target languages, and click **Translate page**. On first use, allow access to the MyMemory API. The source language must be selected explicitly.
+6. Alternatively select **Your AI model**, open **Settings**, enter the API base URL, model ID and optional API key, then save. **Save & test API** sends a short test and may incur a provider charge.
+7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
+
+MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
 
 Select **Interface language** in the popup or settings to change the UI.
 On first use the extension follows the browser language when supported and
@@ -84,9 +87,10 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 ## Privacy and security
 
 - Nothing is translated or uploaded until you click **Translate page**.
-- When invoked, the selected text passages, document title, surrounding context, and glossary terms go to **your configured AI provider**. The extension itself includes no bundled commercial translation endpoint.
+- When using MyMemory, each selected passage is sent to MyMemory; its [terms and privacy policy](https://mymemory.translated.net/terms-and-conditions) state that submitted segments may be retained long term and shared with service partners. Do not use it for confidential or private content. The free mode does not send the title, surrounding context or glossary.
+- When using AI mode, selected passages, document title, surrounding context, and glossary terms go to **your configured AI provider**.
 - Credentials are stored in `chrome.storage.local`, accessible to trusted extension pages and the background worker, not directly to the webpage. **Local storage is not encrypted with a separate application password**; protect your OS account and Chrome profile.
-- Only the configured API origin is requested at runtime, not every visited website. The extension uses `activeTab` permission for the open webpage.
+- Access to the selected provider's API origin is requested at runtime, not to every visited website. The extension uses `activeTab` permission for the open webpage.
 - Translations are inserted using `textContent`, never parsed as HTML, to avoid untrusted model output injecting page markup or scripts.
 - Use HTTPS for remote endpoints. Local HTTP is permitted only for `localhost` / `127.0.0.1`.
 - Avoid feeding confidential, medical, financial, or private enterprise content to unknown API relays. The optional cache stores translated passages locally for seven days.
@@ -113,6 +117,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 
 ```text
 popup.html/js            Click-to-translate and remove overlays
+free-translate.mjs       MyMemory translation and language choices
 discussion.js            Read Kaggle or structured discussion data
 discussion-core.mjs      Format authors and nested replies for the clipboard
 i18n.mjs/ui-language.mjs Interface translations and saved language selection

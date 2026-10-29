@@ -3,6 +3,7 @@ import {
   makeTranslationMessages, makeReviewMessages,
   parseModelTranslations, normalizeEntries
 } from "./core.mjs";
+import {FREE_ORIGIN, normalizeEngine, translateFree} from "./free-translate.mjs";
 
 // Keep API credentials away from content scripts. Options/popup/service worker remain trusted.
 chrome.storage.local.setAccessLevel({accessLevel: "TRUSTED_CONTEXTS"}).catch(() => {});
@@ -77,12 +78,14 @@ async function sha256(text) {
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function translationWithCache(entries, context, force = false) {
+async function translationWithCache(entries, context, force = false, forceAi = false) {
   const settings = await readSettings();
-  if (!String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
-  const url = normalizeEndpoint(settings.endpoint);
+  const {translationEngine} = await chrome.storage.local.get("translationEngine");
+  const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(translationEngine, !!String(settings.model || "").trim());
+  if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
+  const url = engine.provider === "ai" ? normalizeEndpoint(settings.endpoint) : FREE_ORIGIN;
   const key = await sha256(JSON.stringify({
-    version: 1, endpoint: url, model: settings.model, source: settings.source,
+    version: 2, engine, endpoint: url, model: settings.model, source: settings.source,
     target: settings.target, style: settings.style, glossary: settings.glossary,
     review: !!settings.review, context, entries
   }));
@@ -95,11 +98,22 @@ async function translationWithCache(entries, context, force = false) {
     }
   }
 
-  const first = await modelRequest(makeTranslationMessages(entries, context, settings), settings);
-  let translations = parseModelTranslations(first, entries.map(e => e.id));
+  let translations;
   let reviewed = false;
   let reviewWarning = "";
-  if (settings.review) {
+  if (engine.provider === "mymemory") {
+    try {
+      if (!await chrome.permissions.contains({origins: [FREE_ORIGIN]})) throw new Error("MyMemory host access is not granted.");
+      translations = await translateFree(entries, engine);
+    } catch (error) {
+      error.fatal = true;
+      throw error;
+    }
+  } else {
+    const first = await modelRequest(makeTranslationMessages(entries, context, settings), settings);
+    translations = parseModelTranslations(first, entries.map(e => e.id));
+  }
+  if (engine.provider === "ai" && settings.review) {
     try {
       const candidates = entries.map(e => ({id: e.id, text: translations[e.id]}));
       const revised = await modelRequest(makeReviewMessages(entries, candidates, context, settings), settings);
@@ -139,13 +153,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (sender.tab) throw new Error("Connection test must be triggered from the extension settings.");
       const entries = [{id: "cf-1", text: "The model may be correct, but the evidence is not conclusive."}];
       const context = {title: "Translation accuracy check", opening: "", before: "", after: ""};
-      const result = await translationWithCache(entries, context, true);
+      const result = await translationWithCache(entries, context, true, true);
       return {sample: result.translations["cf-1"], reviewed: result.reviewed};
     }
     throw new Error("Unsupported request.");
   })().then(
     result => sendResponse({ok: true, ...result}),
-    error => sendResponse({ok: false, error: String(error?.message || error).slice(0, 500)})
+    error => sendResponse({ok: false, error: String(error?.message || error).slice(0, 500), fatal: error?.fatal === true})
   );
   return true;
 });

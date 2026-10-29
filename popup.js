@@ -2,10 +2,36 @@ import {DEFAULT_SETTINGS} from "./core.mjs";
 import {formatDiscussion} from "./discussion-core.mjs";
 import {setupLanguage, translate} from "./ui-language.mjs";
 import {contentMessages} from "./i18n.mjs";
+import {DEFAULT_ENGINE, FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine} from "./free-translate.mjs";
 const $ = id => document.getElementById(id);
 let busy = false;
 let language = "en";
+let engine = {...DEFAULT_ENGINE};
+let saveQueue = Promise.resolve();
 const t = (key, values) => translate(language, key, values);
+
+function renderEngine() {
+  $("provider").value = engine.provider;
+  $("free-controls").hidden = engine.provider !== "mymemory";
+  $("ai-controls").hidden = engine.provider !== "ai";
+  const names = new Intl.DisplayNames([language], {type: "language"});
+  for (const [id, selected] of [["freeSource", engine.source], ["freeTarget", engine.target]]) {
+    const select = $(id);
+    select.replaceChildren(...LANGUAGE_CODES.map(code => {
+      const option = document.createElement("option");
+      option.value = code;
+      option.textContent = names.of(code) || code;
+      return option;
+    }));
+    select.value = selected;
+  }
+}
+
+function persistEngine() {
+  const snapshot = {...engine};
+  saveQueue = saveQueue.catch(() => {}).then(() => chrome.storage.local.set({translationEngine: snapshot}));
+  return saveQueue;
+}
 
 function status(text, kind = "info") {
   $("message").textContent = text;
@@ -68,12 +94,20 @@ async function copyDiscussion() {
 
 async function runAction(kind) {
   if (busy) return;
+  let permission;
+  if (kind === "CF_START" && engine.provider === "mymemory") {
+    if (engine.source === engine.target) { status(t("sameLanguage"), "error"); return; }
+    // Called synchronously from the click handler to preserve the user gesture.
+    permission = chrome.permissions.request({origins: [FREE_ORIGIN]});
+  }
   busy = true;
   for (const button of document.querySelectorAll("button")) button.disabled = true;
   try {
     if (kind === "CF_START") {
       const config = await settings();
-      if (!config.model.trim()) throw new Error(t("needModel"));
+      if (engine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
+      if (permission && !await permission) throw new Error(t("permissionFree"));
+      await persistEngine();
       status(t("starting"), "info");
       const result = await communicate(kind, {maxBlocks: config.maxBlocks, messages: contentMessages(language)});
       status(result.started
@@ -99,7 +133,21 @@ $("stop").addEventListener("click", () => runAction("CF_STOP"));
 $("clear").addEventListener("click", () => runAction("CF_CLEAR"));
 $("copy-discussion").addEventListener("click", () => void copyDiscussion());
 $("settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
-void setupLanguage(next => {
-  language = next;
-  void updateSettingsPreview().catch(error => status(String(error?.message || error), "error"));
-}).catch(error => status(String(error?.message || error), "error"));
+for (const [id, key] of [["provider", "provider"], ["freeSource", "source"], ["freeTarget", "target"]]) {
+  $(id).addEventListener("change", () => {
+    engine[key] = $(id).value;
+    renderEngine();
+    void persistEngine().catch(error => status(String(error?.message || error), "error"));
+  });
+}
+void (async () => {
+  const config = await settings();
+  const stored = await chrome.storage.local.get("translationEngine");
+  engine = normalizeEngine(stored.translationEngine, !!config.model.trim());
+  await setupLanguage(next => {
+    language = next;
+    renderEngine();
+    void updateSettingsPreview().catch(error => status(String(error?.message || error), "error"));
+  });
+  for (const id of ["provider", "freeSource", "freeTarget", "start"]) $(id).disabled = false;
+})().catch(error => status(String(error?.message || error), "error"));
