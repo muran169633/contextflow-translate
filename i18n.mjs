@@ -203,6 +203,27 @@ Object.assign(messages.es, {kaggleAccess:'El contenido del Notebook está en un 
 Object.assign(messages.de, {kaggleAccess:'Der Notebook-Inhalt liegt in einem separaten Frame. Für die Übersetzung werden Zugriff auf die Inhaltsdomain und Navigation angefragt; Chrome kann vor Lesezugriff auf den Browserverlauf warnen. Die Erweiterung fragt Frames nur für das aktuelle Notebook ab.'});
 Object.assign(messages.ko, {kaggleAccess:'Notebook 본문은 별도 프레임에 있습니다. 번역 시 콘텐츠 도메인 및 탐색 권한을 요청하며 Chrome이 방문 기록 읽기를 경고할 수 있습니다. 확장 프로그램은 현재 Notebook 번역에만 프레임을 조회합니다.'});
 
+Object.assign(messages['zh-CN'], {autoUnsupported:'MyMemory 不支持自动识别源语言，已切换为英语，请按需要修改。', displayShortcut:'Alt+Shift+Y 切换原文和双语；可在浏览器的扩展快捷键页面修改。'});
+Object.assign(messages.en, {autoUnsupported:'MyMemory does not support automatic source detection. English has been selected; change it if needed.', displayShortcut:'Alt+Shift+Y switches original and bilingual views; customize it in browser extension shortcuts.'});
+Object.assign(messages.ja, {autoUnsupported:'MyMemory は原文言語の自動判定に対応していません。英語に切り替えました。必要に応じて変更してください。', displayShortcut:'Alt+Shift+Y で原文と対訳を切り替えます。拡張機能のショートカット設定で変更できます。'});
+Object.assign(messages.es, {autoUnsupported:'MyMemory no detecta el idioma automáticamente. Se ha seleccionado inglés; cámbialo si es necesario.', displayShortcut:'Alt+Shift+Y alterna entre original y bilingüe; puedes cambiarlo en los atajos de extensiones.'});
+Object.assign(messages.de, {autoUnsupported:'MyMemory unterstützt keine automatische Spracherkennung. Englisch wurde gewählt; ändere es bei Bedarf.', displayShortcut:'Alt+Shift+Y wechselt zwischen Original und zweisprachiger Ansicht; in den Erweiterungs-Shortcuts änderbar.'});
+Object.assign(messages.ko, {autoUnsupported:'MyMemory는 원본 언어 자동 감지를 지원하지 않아 영어로 변경했습니다. 필요하면 수정하세요.', displayShortcut:'Alt+Shift+Y로 원문과 이중 언어를 전환합니다. 브라우저 확장 프로그램 단축키에서 변경할 수 있습니다.'});
+
+Object.assign(messages['zh-CN'], {autoSourceNote:'自动检测对短句可能不准；Google 免密钥模式将逐段检测，速度可能较慢。'});
+Object.assign(messages.en, {autoSourceNote:'Detection can be inaccurate for short text. The no-key Google mode detects each paragraph separately and may be slower.'});
+Object.assign(messages.ja, {autoSourceNote:'短い文章は誤判定される場合があります。キー不要の Google 翻訳は段落ごとに判定するため遅くなる場合があります。'});
+Object.assign(messages.es, {autoSourceNote:'La detección puede fallar con textos cortos. Google sin clave detecta cada párrafo por separado y puede ser más lento.'});
+Object.assign(messages.de, {autoSourceNote:'Bei kurzen Texten kann die Erkennung ungenau sein. Google ohne Schlüssel erkennt jeden Absatz einzeln und kann langsamer sein.'});
+Object.assign(messages.ko, {autoSourceNote:'짧은 문장은 언어 감지가 부정확할 수 있습니다. 키 없는 Google 번역은 문단별로 감지하므로 느릴 수 있습니다.'});
+
+Object.assign(messages['zh-CN'], {swapLanguages:'交换源语言和目标语言', swapAutoUnavailable:'自动检测无法交换，请先选择具体的源语言。'});
+Object.assign(messages.en, {swapLanguages:'Swap source and target languages', swapAutoUnavailable:'Automatic detection cannot be swapped. Select a source language first.'});
+Object.assign(messages.ja, {swapLanguages:'原文言語と翻訳言語を入れ替える', swapAutoUnavailable:'自動検出は入れ替えできません。先に原文言語を選択してください。'});
+Object.assign(messages.es, {swapLanguages:'Intercambiar idiomas de origen y destino', swapAutoUnavailable:'No se puede intercambiar la detección automática. Selecciona primero un idioma de origen.'});
+Object.assign(messages.de, {swapLanguages:'Ausgangs- und Zielsprache tauschen', swapAutoUnavailable:'Automatische Erkennung kann nicht getauscht werden. Wähle zuerst eine Ausgangssprache.'});
+Object.assign(messages.ko, {swapLanguages:'원본과 번역 언어 바꾸기', swapAutoUnavailable:'자동 감지 상태에서는 언어를 바꿀 수 없습니다. 먼저 원본 언어를 선택하세요.'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);

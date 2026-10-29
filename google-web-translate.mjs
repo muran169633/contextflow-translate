@@ -35,7 +35,7 @@ export async function translateGoogleWeb(entries, engine, fetcher = fetch) {
   const encoder = new TextEncoder();
   // 仅在原文与译文段落边界可核对时采用批量结果，避免错贴译文。
   const joined = entries.map(entry => entry.text).join('\n\n');
-  if (entries.length > 1 && entries.every(entry => !/[\r\n]/.test(entry.text)) && encoder.encode(joined).length <= MAX_BATCH_BYTES) {
+  if (engine.source !== 'auto' && entries.length > 1 && entries.every(entry => !/[\r\n]/.test(entry.text)) && encoder.encode(joined).length <= MAX_BATCH_BYTES) {
     const result = await requestGoogle(joined, engine, fetcher);
     const parts = result.translated.split(/\n[ \t]*\n/);
     if (result.original === joined && parts.length === entries.length && parts.every(part => part.trim())) {

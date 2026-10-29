@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 
 test('免费模式通过弹窗请求权限并启动翻译，无需模型', async () => {
   const nodes = new Map();
-  for (const id of ['message', 'model', 'detail', 'start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info', 'google-web-info', 'youdao-info', 'microsoft-info', 'dynamicInfo', 'mode-bilingual', 'mode-original', 'kaggleInfo']) {
+  for (const id of ['message', 'model', 'detail', 'start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info', 'google-web-info', 'youdao-info', 'microsoft-info', 'dynamicInfo', 'mode-bilingual', 'mode-original', 'kaggleInfo', 'autoSourceInfo', 'swapLanguages']) {
     nodes.set(id, {value: '', disabled: false, textContent: '', className: '', setAttribute(key, value) { this[key] = value; }, replaceChildren() {}, addEventListener(_type, fn) { this.handler = fn; }});
   }
   const buttons = ['start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings'].map(id => nodes.get(id));
   const saved = {};
   let requested;
   let started;
-  let pingVersion = 16;
-  let backgroundVersion = 16;
+  let pingVersion = 17;
+  let backgroundVersion = 17;
   let starts = 0;
   let quickShown = false;
   let permissionFailure = false;
@@ -54,7 +54,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /刷新网页/);
-    pingVersion = 16;
+    pingVersion = 17;
     backgroundVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));

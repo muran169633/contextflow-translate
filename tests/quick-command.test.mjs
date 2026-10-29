@@ -5,6 +5,7 @@ let runtimeListener;
 let permitted = false;
 let installed = true;
 let running = false;
+let displayMode = 'bilingual';
 let injectedCss = 0;
 const messages = [];
 const saved = {settings: {model: '', target: 'Simplified Chinese (zh-CN)', maxBlocks: 8}, translationEngine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}, uiLanguage: 'zh-CN'};
@@ -17,10 +18,11 @@ globalThis.chrome = {
     messages.push({tabId, ...message});
     if (message.type === 'CF_PING') {
       if (!installed) throw new Error('No receiver');
-      return {ok: true, protocol: 16, running};
+      return {ok: true, protocol: 17, running, displayMode};
     }
     if (message.type === 'CF_QUICK_SHOW' || message.type === 'CF_QUICK_NOTICE') return {ok: true};
     if (message.type === 'CF_START') return {ok: true, started: true, found: 1};
+    if (message.type === 'CF_SET_DISPLAY') { displayMode = message.mode; return {ok: true, displayMode}; }
     throw new Error(`Unexpected ${message.type}`);
   }},
   scripting: {insertCSS: async () => { injectedCss++; }, executeScript: async () => { installed = true; }}
@@ -100,4 +102,18 @@ test('快捷键支持微软翻译且不向网页发送密钥', async () => {
   const start = messages.find(message => message.type === 'CF_START');
   assert.equal(start.preferences.engine.provider, 'microsoft');
   assert.equal(JSON.stringify(start).includes('ms-secret'), false);
+});
+
+test('原文和双语快捷键只切换显示，不发起翻译', async () => {
+  messages.length = 0; displayMode = 'bilingual';
+  commandListener('toggle-display', {id: 7, url: 'https://example.com/'});
+  await tick();
+  assert.equal(displayMode, 'original');
+  assert.equal(messages.filter(message => message.type === 'CF_START').length, 0);
+  assert.match(messages.find(message => message.type === 'CF_QUICK_NOTICE').text, /原文/);
+  messages.length = 0;
+  commandListener('toggle-display', {id: 7, url: 'https://example.com/'});
+  await tick();
+  assert.equal(displayMode, 'bilingual');
+  assert.equal(messages.filter(message => message.type === 'CF_START').length, 0);
 });

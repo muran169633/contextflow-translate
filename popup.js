@@ -2,7 +2,7 @@ import {DEFAULT_SETTINGS} from "./core.mjs";
 import {formatDiscussion} from "./discussion-core.mjs";
 import {setupLanguage, translate} from "./ui-language.mjs";
 import {contentMessages} from "./i18n.mjs";
-import {DEFAULT_ENGINE, FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine} from "./free-translate.mjs";
+import {DEFAULT_ENGINE, FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, supportsAutoSource} from "./free-translate.mjs";
 import {GOOGLE_TRANSLATE_ORIGIN} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN} from "./google-web-translate.mjs";
 import {YOUDAO_ORIGIN} from "./youdao-translate.mjs";
@@ -49,14 +49,17 @@ function renderEngine() {
   $("google-web-info").hidden = engine.provider !== "google-web";
   $("youdao-info").hidden = engine.provider !== "youdao";
   $("microsoft-info").hidden = engine.provider !== "microsoft";
+  $("autoSourceInfo").hidden = engine.source !== "auto" || !supportsAutoSource(engine.provider);
   $("ai-controls").hidden = engine.provider !== "ai";
+  $("swapLanguages").title = t(engine.source === "auto" ? "swapAutoUnavailable" : "swapLanguages");
   const names = new Intl.DisplayNames([language], {type: "language"});
   for (const [id, selected] of [["freeSource", engine.source], ["freeTarget", engine.target]]) {
     const select = $(id);
-    select.replaceChildren(...LANGUAGE_CODES.map(code => {
+    const codes = id === "freeSource" && supportsAutoSource(engine.provider) ? ["auto", ...LANGUAGE_CODES] : LANGUAGE_CODES;
+    select.replaceChildren(...codes.map(code => {
       const option = document.createElement("option");
       option.value = code;
-      option.textContent = names.of(code) || code;
+      option.textContent = code === "auto" ? t("auto") : names.of(code) || code;
       return option;
     }));
     select.value = selected;
@@ -102,7 +105,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}, {frameId: 0}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 16) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 17) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -173,7 +176,7 @@ async function runAction(kind) {
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 16) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 17) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;
@@ -207,6 +210,13 @@ $("stop").addEventListener("click", () => runAction("CF_STOP"));
 $("clear").addEventListener("click", () => runAction("CF_CLEAR"));
 $("copy-discussion").addEventListener("click", () => void copyDiscussion());
 $("settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
+$("swapLanguages").addEventListener("click", () => {
+  if (busy) return;
+  if (engine.source === "auto") { status(t("swapAutoUnavailable"), "info"); return; }
+  [engine.source, engine.target] = [engine.target, engine.source];
+  renderEngine();
+  void persistEngine().catch(error => status(String(error?.message || error), "error"));
+});
 for (const mode of ["bilingual", "original"]) {
   $("mode-" + mode).addEventListener("click", () => {
     displayQueue = displayQueue.then(() => setDisplayMode(mode)).catch(error => status(String(error?.message || error), "error"));
@@ -215,6 +225,10 @@ for (const mode of ["bilingual", "original"]) {
 for (const [id, key] of [["provider", "provider"], ["freeSource", "source"], ["freeTarget", "target"]]) {
   $(id).addEventListener("change", () => {
     engine[key] = $(id).value;
+    if (key === "provider" && engine.source === "auto" && !supportsAutoSource(engine.provider)) {
+      engine.source = "en";
+      status(t("autoUnsupported"), "info");
+    }
     renderEngine();
     void persistEngine().catch(error => status(String(error?.message || error), "error"));
   });
@@ -240,5 +254,5 @@ void (async () => {
     .then(result => { displayMode = result?.displayMode === "original" ? "original" : "bilingual"; renderDisplayMode(); })
     .catch(() => {});
   quickReady = true;
-  for (const id of ["provider", "freeSource", "freeTarget", "start", "continue"]) $(id).disabled = false;
+  for (const id of ["provider", "freeSource", "freeTarget", "swapLanguages", "start", "continue"]) $(id).disabled = false;
 })().catch(error => status(String(error?.message || error), "error"));

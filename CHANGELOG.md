@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added automatic source-language detection for supported translation services,
+  with per-paragraph Google web detection and a warning for short text.
+- Added source/target language swapping and an original/bilingual display
+  shortcut, including synchronization with the Kaggle Notebook content frame.
 - Moved the initial quick translation button position to the upper-right corner.
 - Added targeted translation of the Kaggle Notebook content frame, including
   viewport tracking and short table headers. The needed navigation and content

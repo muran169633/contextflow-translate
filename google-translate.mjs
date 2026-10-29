@@ -8,7 +8,7 @@ export async function translateGoogle(entries, engine, apiKey, fetcher = fetch) 
   const response = await fetcher('https://translation.googleapis.com/language/translate/v2', {
     method: 'POST',
     headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim()},
-    body: JSON.stringify({q: entries.map(entry => entry.text), source: engine.source, target: engine.target, format: 'text'}),
+    body: JSON.stringify({q: entries.map(entry => entry.text), ...(engine.source === 'auto' ? {} : {source: engine.source}), target: engine.target, format: 'text'}),
     signal: AbortSignal.timeout(27000)
   });
   let data;

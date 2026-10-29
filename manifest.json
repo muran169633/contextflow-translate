@@ -20,6 +20,10 @@
     "quick-translate": {
       "suggested_key": {"default": "Ctrl+Shift+Y", "mac": "Command+Shift+Y"},
       "description": "Quickly translate the current page"
+    },
+    "toggle-display": {
+      "suggested_key": {"default": "Alt+Shift+Y", "mac": "Alt+Shift+Y"},
+      "description": "Switch between original and bilingual views"
     }
   },
   "background": {

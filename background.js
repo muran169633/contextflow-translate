@@ -3,7 +3,7 @@ import {
   makeTranslationMessages, makeReviewMessages,
   parseModelTranslations, normalizeEntries
 } from "./core.mjs";
-import {FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, translateFree} from "./free-translate.mjs";
+import {FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, supportsAutoSource, translateFree} from "./free-translate.mjs";
 import {GOOGLE_TRANSLATE_ORIGIN, translateGoogle} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN, translateGoogleWeb} from "./google-web-translate.mjs";
 import {YOUDAO_ORIGIN, translateYoudao} from "./youdao-translate.mjs";
@@ -30,12 +30,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0}); } catch {}
-  if (ping?.ok && ping.protocol !== 16) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 17) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0});
-    if (!ping?.ok || ping.protocol !== 16) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 17) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}}, {frameId: 0});
   return ping;
@@ -82,12 +82,28 @@ async function quickTranslate(tab) {
   }
 }
 
+async function toggleDisplay(tab) {
+  if (!Number.isInteger(tab?.id) || (tab.url && !/^https?:\/\//.test(tab.url))) throw new Error("Open an ordinary HTTP or HTTPS page.");
+  const language = await quickLocale();
+  const ping = await ensureQuickPage(tab.id, language);
+  const mode = ping.displayMode === "original" ? "bilingual" : "original";
+  const message = {type: "CF_SET_DISPLAY", mode};
+  const result = await chrome.tabs.sendMessage(tab.id, message, {frameId: 0});
+  if (!result?.ok) throw new Error(translate(language, "displayError"));
+  if (isKaggleNotebook(tab.url)) {
+    const frame = await sendToKaggleNotebook(tab.id, message, false);
+    if (frame.status !== "ok") throw new Error(translate(language, "kaggleFrameWarning"));
+  }
+  await chrome.tabs.sendMessage(tab.id, {type: "CF_QUICK_NOTICE", kind: "info", text: translate(language, mode === "original" ? "showingOriginal" : "showingBilingual"), preferences: {messages: contentMessages(language)}}, {frameId: 0});
+}
+
 chrome.commands?.onCommand?.addListener((command, tab) => {
-  if (command !== "quick-translate") return;
+  if (!["quick-translate", "toggle-display"].includes(command)) return;
   void (async () => {
     const active = tab?.id ? tab : (await chrome.tabs.query({active: true, currentWindow: true}))[0];
     try {
-      await quickTranslate(active);
+      if (command === "toggle-display") await toggleDisplay(active);
+      else await quickTranslate(active);
     } catch (error) {
       const message = String(error?.message || error);
       try {
@@ -178,7 +194,7 @@ async function storeCache(key, entries, translations, reviewed) {
 async function translationWithCache(entries, context, force = false, forceAi = false, requestedEngine = null) {
   const settings = await readSettings();
   const {translationEngine} = await chrome.storage.local.get("translationEngine");
-  if (requestedEngine && (!['mymemory', 'google-web', 'google', 'youdao', 'microsoft', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
+  if (requestedEngine && (!['mymemory', 'google-web', 'google', 'youdao', 'microsoft', 'ai'].includes(requestedEngine.provider) || !(LANGUAGE_CODES.includes(requestedEngine.source) || (requestedEngine.source === 'auto' && supportsAutoSource(requestedEngine.provider))) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
     throw new Error("Invalid translation engine selection.");
   }
   const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(requestedEngine || translationEngine, !!String(settings.model || "").trim());
@@ -235,7 +251,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 16};
+      return {protocol: 17};
     }
     if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       if (!sender.tab || sender.frameId !== 0 || !isKaggleNotebook(sender.tab.url)) throw new Error("Invalid notebook viewport sender.");

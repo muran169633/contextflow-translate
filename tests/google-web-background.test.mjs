@@ -34,3 +34,13 @@ test('Google 批量结果缓存后按新的段落 ID 安全映射', async () => 
   assert.deepEqual(second.translations, {'cf-20':'第一段。','cf-21':'第二段。'});
   assert.equal(calls,1);
 });
+
+test('自动源语言经后台请求保留为 auto', async () => {
+  store.settings.cache=false;
+  let url;
+  globalThis.fetch=async value=>{url=new URL(value);return {ok:true,json:async()=>[[['你好。','Bonjour.']]]};};
+  const engine={provider:'google-web',source:'auto',target:'zh-CN'};
+  const result=await new Promise(resolve=>listener({type:'CF_TRANSLATE',entries:[{id:'cf-1',text:'Bonjour.'}],context:{},engine},{id:'test',tab:{id:1}},resolve));
+  assert.equal(result.ok,true);
+  assert.equal(url.searchParams.get('sl'),'auto');
+});

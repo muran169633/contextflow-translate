@@ -48,7 +48,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 2. Open `chrome://extensions` (or `edge://extensions`). Enable **Developer mode**.
 3. Click **Load unpacked** and select the directory containing `manifest.json`.
 4. Open an ordinary `https://` article and click the ContextFlow toolbar icon.
-5. Select **MyMemory · free** or **Google Translate · no key (unofficial)**, choose the source and target languages, and click **Translate page**. On first use, allow access to the selected service. The source language must be selected explicitly.
+5. Select **MyMemory · free** or **Google Translate · no key (unofficial)**, choose the source and target languages, and click **Translate page**. On first use, allow access to the selected service. Google web also offers automatic source-language detection; MyMemory requires an explicit source language.
 6. Alternatively select **Your AI model** and open **Settings**. Choose an API type: **OpenAI-compatible** for any provider exposing `chat/completions`, **Google Gemini API**, or **Anthropic Claude API**. Enter the model ID and its provider's API key; for compatible services also enter the base URL. Save, then return to the page. **Save & test API** sends a short test and may incur a provider charge.
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
 8. Dynamic translation is enabled by default: after starting, newly expanded or scrolled-into-view content is sent to the selected provider. It may consume quota or incur charges. Turn it off in Settings for manual translation, or use **Stop** / **Remove translations** to end monitoring on the current page. **Translate new or unfinished content** remains available.
@@ -72,6 +72,22 @@ cannot silently grant that permission. The page button appears only after
 opening the extension or using the shortcut on that page; it does not add
 permanent access to all sites.
 
+Use **Alt+Shift+Y** (macOS: **Option+Shift+Y**) to switch between the original
+and bilingual views without starting another translation. Change this shortcut
+on the same browser shortcuts page. Translation already in progress and dynamic
+translation can continue when the original view is selected.
+
+### 自动检测与语言交换
+
+Google 免密钥、Google Cloud、微软和有道模式支持在源语言中选择**自动检测**；
+MyMemory 需要指定源语言，从自动检测切换到 MyMemory 时会提示并选用英语，
+请按需更改。短句的识别结果可能不准确。Google 免密钥模式在自动检测时逐段
+发送请求，避免不同语言的段落被当成同一种语言，速度可能比指定源语言更慢。
+其他服务的密钥、额度和费用要求仍然适用。
+
+源语言和目标语言之间的交换按钮可快速交换已选语言；使用自动检测时，请先
+选定具体的源语言，再交换。
+
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
 
 The optional Google Translate web endpoint does not require an API key, but
@@ -83,7 +99,8 @@ Short paragraphs may be combined in a request; the extension checks paragraph
 boundaries and retries them individually when it cannot align the response.
 For short paragraphs with inline `code`, KaTeX, MathJax or MathML, the extension
 attempts to preserve those contents and reports an error if their markers are
-lost. For English-to-Chinese text on quantum-circuit pages, relevant occurrences
+lost. For quantum-circuit pages with English explicitly selected as the source
+and Chinese as the target, relevant occurrences
 of `shot`, `shots` and `Toffolis` are rewritten to `circuit run`, `circuit runs`
 and `Toffoli gates` before sending to reduce ambiguity. This is a narrow rule,
 not a guarantee of technical accuracy; long or unsupported formulas may still

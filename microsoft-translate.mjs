@@ -6,7 +6,7 @@ export async function translateMicrosoft(entries, engine, apiKey, region, fetche
   const lang = code => ({'zh-CN': 'zh-Hans', 'zh-TW': 'zh-Hant'})[code] || code;
   const url = new URL('https://api.cognitive.microsofttranslator.com/translate');
   url.searchParams.set('api-version', '3.0');
-  url.searchParams.set('from', lang(engine.source));
+  if (engine.source !== 'auto') url.searchParams.set('from', lang(engine.source));
   url.searchParams.set('to', lang(engine.target));
   const headers = {'Content-Type': 'application/json', 'Ocp-Apim-Subscription-Key': apiKey.trim()};
   if (String(region || '').trim()) headers['Ocp-Apim-Subscription-Region'] = region.trim();
