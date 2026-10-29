@@ -100,6 +100,8 @@ MIT license. See `LICENSE`.
 
 ## Contributing and project history
 
+The project is maintained by [@muran169633](https://github.com/muran169633).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution process and
 [CHANGELOG.md](CHANGELOG.md) for changes recorded in this repository. The
 initial repository commit imports the supplied 0.1.0 source archive; earlier

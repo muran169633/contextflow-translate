@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added contribution guidance and documented the project maintainer.
+
 ## 0.1.0 — initial source import
 
 - Imported the supplied ContextFlow Translate MVP source archive, including
