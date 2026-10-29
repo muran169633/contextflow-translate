@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 
 test('免费模式通过弹窗请求权限并启动翻译，无需模型', async () => {
   const nodes = new Map();
-  for (const id of ['message', 'model', 'detail', 'start', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls']) {
+  for (const id of ['message', 'model', 'detail', 'start', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info']) {
     nodes.set(id, {value: '', disabled: false, textContent: '', className: '', replaceChildren() {}, addEventListener(_type, fn) { this.handler = fn; }});
   }
   const buttons = ['start', 'stop', 'clear', 'copy-discussion', 'settings'].map(id => nodes.get(id));
   const saved = {};
   let requested;
   let started;
-  let pingVersion = 2;
-  let backgroundVersion = 2;
+  let pingVersion = 3;
+  let backgroundVersion = 3;
   let starts = 0;
   globalThis.document = {documentElement: {}, createElement: () => ({}), getElementById: id => nodes.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
   Object.defineProperty(globalThis, 'navigator', {configurable: true, value: {language: 'zh-CN'}});
@@ -43,7 +43,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(starts, 1);
     assert.match(nodes.get('message').textContent, /刷新网页/);
-    pingVersion = 2;
+    pingVersion = 3;
     backgroundVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));

@@ -34,6 +34,7 @@ function settingsFromForm() {
   return {
     aiProvider: currentProvider,
     connections,
+    googleTranslateKey: $("googleTranslateKey").value.trim(),
     endpoint: $("endpoint").value.trim(),
     model: $("model").value.trim(),
     apiKey: $("apiKey").value.trim(),
@@ -53,7 +54,7 @@ async function restore() {
   connections = {...(s.connections || {})};
   connections[currentProvider] = {endpoint: s.endpoint, model: s.model, apiKey: s.apiKey};
   showConnection(currentProvider);
-  for (const name of ["source", "target", "style", "glossary", "maxBlocks"]) {
+  for (const name of ["googleTranslateKey", "source", "target", "style", "glossary", "maxBlocks"]) {
     $(name).value = s[name];
   }
   $("review").checked = !!s.review;
@@ -89,6 +90,13 @@ async function saveAndMaybeTest(test) {
 }
 $("save").addEventListener("click", () => saveAndMaybeTest(false));
 $("test").addEventListener("click", () => saveAndMaybeTest(true));
+$("saveGoogleKey").addEventListener("click", async () => {
+  try {
+    const data = await chrome.storage.local.get("settings");
+    await chrome.storage.local.set({settings: {...(data.settings || {}), googleTranslateKey: $("googleTranslateKey").value.trim()}});
+    status(t("googleKeySaved"), "success");
+  } catch (error) { status(String(error?.message || error), "error"); }
+});
 $("aiProvider").addEventListener("change", () => {
   rememberConnection();
   showConnection($("aiProvider").value);

@@ -3,16 +3,20 @@ import {formatDiscussion} from "./discussion-core.mjs";
 import {setupLanguage, translate} from "./ui-language.mjs";
 import {contentMessages} from "./i18n.mjs";
 import {DEFAULT_ENGINE, FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine} from "./free-translate.mjs";
+import {GOOGLE_TRANSLATE_ORIGIN} from "./google-translate.mjs";
 const $ = id => document.getElementById(id);
 let busy = false;
 let language = "en";
 let engine = {...DEFAULT_ENGINE};
 let saveQueue = Promise.resolve();
+let googleKeyPresent = false;
 const t = (key, values) => translate(language, key, values);
 
 function renderEngine() {
   $("provider").value = engine.provider;
-  $("free-controls").hidden = engine.provider !== "mymemory";
+  $("free-controls").hidden = engine.provider === "ai";
+  $("mymemory-info").hidden = engine.provider !== "mymemory";
+  $("google-info").hidden = engine.provider !== "google";
   $("ai-controls").hidden = engine.provider !== "ai";
   const names = new Intl.DisplayNames([language], {type: "language"});
   for (const [id, selected] of [["freeSource", engine.source], ["freeTarget", engine.target]]) {
@@ -44,6 +48,7 @@ async function settings() {
 
 async function updateSettingsPreview() {
   const data = await settings();
+  googleKeyPresent = !!String(data.googleTranslateKey || "").trim();
   $("model").textContent = data.model || t("noModel");
   $("detail").textContent = `${data.target} / ${t(data.style)}${data.review ? ` / ${t("reviewOn")}` : ""}`;
 }
@@ -62,7 +67,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 2) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 3) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -96,10 +101,11 @@ async function runAction(kind) {
   if (busy) return;
   const selectedEngine = {...engine};
   let permission;
-  if (kind === "CF_START" && selectedEngine.provider === "mymemory") {
+  if (kind === "CF_START" && ["mymemory", "google"].includes(selectedEngine.provider)) {
     if (selectedEngine.source === selectedEngine.target) { status(t("sameLanguage"), "error"); return; }
+    if (selectedEngine.provider === "google" && !googleKeyPresent) { status(t("googleNeedKey"), "error"); return; }
     // Called synchronously from the click handler to preserve the user gesture.
-    permission = chrome.permissions.request({origins: [FREE_ORIGIN]});
+    permission = chrome.permissions.request({origins: [selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : FREE_ORIGIN]});
   }
   busy = true;
   for (const button of document.querySelectorAll("button")) button.disabled = true;
@@ -108,11 +114,11 @@ async function runAction(kind) {
     if (kind === "CF_START") {
       const config = await settings();
       if (selectedEngine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
-      if (permission && !await permission) throw new Error(t("permissionFree"));
+      if (permission && !await permission) throw new Error(t(selectedEngine.provider === "google" ? "permissionGoogle" : "permissionFree"));
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 2) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 3) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       const result = await communicate(kind, {engine: selectedEngine, maxBlocks: config.maxBlocks, messages: contentMessages(language)});
@@ -149,6 +155,7 @@ for (const [id, key] of [["provider", "provider"], ["freeSource", "source"], ["f
 }
 void (async () => {
   const config = await settings();
+  googleKeyPresent = !!String(config.googleTranslateKey || "").trim();
   const stored = await chrome.storage.local.get("translationEngine");
   engine = normalizeEngine(stored.translationEngine, !!config.model.trim());
   await setupLanguage(next => {

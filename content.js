@@ -203,7 +203,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 2, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 3, running: state.running, count: state.total});
     } else if (message?.type === "CF_START") {
       sendResponse({ok: true, ...startTranslation(message.preferences)});
     } else if (message?.type === "CF_STOP") {

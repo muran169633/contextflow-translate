@@ -1,6 +1,6 @@
 # ContextFlow Translate 0.1.0
 
-A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the anonymous MyMemory service or your own AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, Google Cloud Translation, or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
@@ -9,6 +9,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the 
 - Bilingual paragraph translation, with the original webpage preserved.
 - A no-account MyMemory mode with 30 selectable source and target languages.
   Availability and quality depend on the language pair and the provider.
+- Google Cloud Translation Basic for standard translation without an LLM; a
+  Google Cloud API key and billing account are required.
 - AI translation in groups of five paragraphs, including title, article opening
   and adjacent-paragraph context. MyMemory translates paragraphs individually.
 - OpenAI-compatible `chat/completions` API with an arbitrary HTTPS base URL, including many personal API gateways; local HTTP model servers on `localhost` / `127.0.0.1`.
@@ -38,6 +40,16 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the 
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
 
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
+
+To use Google Cloud Translation, create a Google Cloud project with the
+[Translation API enabled](https://docs.cloud.google.com/translate/docs/setup),
+configure its billing account and API key, and save the key in the extension's
+Settings. Select **Google Cloud Translation** in the popup. Google's published
+[pricing](https://cloud.google.com/translate/pricing) includes a monthly credit
+equivalent to the first 500,000 NMT characters; usage beyond it may be charged.
+Check the current pricing and your own account before using the service. This
+mode sends the selected text to Google and does not apply the AI glossary,
+context or second-pass review. Translation quality has not been benchmarked.
 
 After updating the extension, reload it from the browser's extension management
 page and refresh the webpage before starting a new translation. Each run and
@@ -100,6 +112,8 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 
 - Nothing is translated or uploaded until you click **Translate page**.
 - When using MyMemory, each selected passage is sent to MyMemory; its [terms and privacy policy](https://mymemory.translated.net/terms-and-conditions) state that submitted segments may be retained long term and shared with service partners. Do not use it for confidential or private content. The free mode does not send the title, surrounding context or glossary.
+- When using Google Cloud Translation, selected passages are sent to Google
+  Cloud; the separate API key is stored locally in the browser profile.
 - When using AI mode, selected passages, document title, surrounding context, and glossary terms go to **your configured AI provider**.
 - Credentials are stored in `chrome.storage.local`, accessible to trusted extension pages and the background worker, not directly to the webpage. **Local storage is not encrypted with a separate application password**; protect your OS account and Chrome profile.
 - Access to the selected provider's API origin is requested at runtime, not to every visited website. The extension uses `activeTab` permission for the open webpage.
@@ -130,6 +144,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 ```text
 popup.html/js            Click-to-translate and remove overlays
 free-translate.mjs       MyMemory translation and language choices
+google-translate.mjs     Google Cloud Translation Basic adapter
 model-adapters.mjs       Compatible, Gemini and Claude API request adapters
 discussion.js            Read Kaggle or structured discussion data
 discussion-core.mjs      Format authors and nested replies for the clipboard

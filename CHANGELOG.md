@@ -15,6 +15,8 @@
   when an older page script or background process needs reloading.
 - MyMemory translations now appear paragraph by paragraph; if the service fails,
   earlier results remain visible and the error identifies the interruption.
+- Added Google Cloud Translation Basic as an optional, separately configured
+  translation provider, with billing and privacy information in the interface.
 
 ## 0.1.0 — initial source import
 

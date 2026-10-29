@@ -4,6 +4,7 @@ import {
   parseModelTranslations, normalizeEntries
 } from "./core.mjs";
 import {FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, translateFree} from "./free-translate.mjs";
+import {GOOGLE_TRANSLATE_ORIGIN, translateGoogle} from "./google-translate.mjs";
 import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
 
 // Keep API credentials away from content scripts. Options/popup/service worker remain trusted.
@@ -69,14 +70,14 @@ async function sha256(text) {
 async function translationWithCache(entries, context, force = false, forceAi = false, requestedEngine = null) {
   const settings = await readSettings();
   const {translationEngine} = await chrome.storage.local.get("translationEngine");
-  if (requestedEngine && (!['mymemory', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
+  if (requestedEngine && (!['mymemory', 'google', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
     throw new Error("Invalid translation engine selection.");
   }
   const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(requestedEngine || translationEngine, !!String(settings.model || "").trim());
   if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
-  const url = engine.provider === "ai" ? modelEndpoint(settings) : FREE_ORIGIN;
+  const url = engine.provider === "ai" ? modelEndpoint(settings) : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : FREE_ORIGIN;
   const key = await sha256(JSON.stringify({
-    version: 3, engine, provider: engine.provider === "ai" ? providerName(settings) : "mymemory", endpoint: url, model: settings.model, source: settings.source,
+    version: 3, engine, provider: engine.provider === "ai" ? providerName(settings) : engine.provider, endpoint: url, model: settings.model, source: settings.source,
     target: settings.target, style: settings.style, glossary: settings.glossary,
     review: !!settings.review, context, entries
   }));
@@ -92,10 +93,10 @@ async function translationWithCache(entries, context, force = false, forceAi = f
   let translations;
   let reviewed = false;
   let reviewWarning = "";
-  if (engine.provider === "mymemory") {
+  if (engine.provider === "mymemory" || engine.provider === "google") {
     try {
-      if (!await chrome.permissions.contains({origins: [FREE_ORIGIN]})) throw new Error("MyMemory host access is not granted.");
-      translations = await translateFree(entries, engine);
+      if (!await chrome.permissions.contains({origins: [url]})) throw new Error("Translation provider host access is not granted.");
+      translations = engine.provider === "google" ? await translateGoogle(entries, engine, settings.googleTranslateKey) : await translateFree(entries, engine);
     } catch (error) {
       error.fatal = true;
       throw error;
@@ -136,7 +137,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 2};
+      return {protocol: 3};
     }
     if (message?.type === "CF_TRANSLATE") {
       if (!sender.tab) throw new Error("Translation requests must originate from an active webpage.");

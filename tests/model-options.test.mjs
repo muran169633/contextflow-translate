@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 test('切换服务时隔离密钥并保留已有兼容接口配置', async () => {
   const elements = new Map();
-  for (const id of ['uiLanguage', 'message', 'aiProvider', 'endpoint', 'endpointHelp', 'model', 'apiKey', 'source', 'target', 'style', 'glossary', 'maxBlocks', 'review', 'cache', 'save', 'test', 'clearCache']) {
+  for (const id of ['uiLanguage', 'message', 'aiProvider', 'endpoint', 'endpointHelp', 'model', 'apiKey', 'googleTranslateKey', 'saveGoogleKey', 'source', 'target', 'style', 'glossary', 'maxBlocks', 'review', 'cache', 'save', 'test', 'clearCache']) {
     elements.set(id, {value: '', checked: false, disabled: false, textContent: '', className: '', addEventListener(_event, fn) { this.handler = fn; }});
   }
   const store = {settings: {endpoint: 'https://gateway.example/v1', model: 'old-model', apiKey: 'old-key', target: 'Chinese', source: 'auto', style: 'faithful', cache: true, maxBlocks: 50}};
@@ -31,6 +31,10 @@ test('切换服务时隔离密钥并保留已有兼容接口配置', async () =>
     elements.get('aiProvider').handler();
     assert.equal(elements.get('apiKey').value, 'old-key');
     assert.equal(elements.get('endpoint').value, 'https://gateway.example/v1');
+    elements.get('googleTranslateKey').value = 'google-key';
+    await elements.get('saveGoogleKey').handler();
+    assert.equal(store.settings.googleTranslateKey, 'google-key');
+    assert.equal(store.settings.connections.gemini.apiKey, 'new-key');
   } finally {
     delete globalThis.document;
     delete globalThis.navigator;

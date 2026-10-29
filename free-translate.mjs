@@ -5,7 +5,7 @@ export const LANGUAGE_CODES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'ja', 'ko',
 export function normalizeEngine(engine, hasModel = false) {
   const input = engine && typeof engine === 'object' ? engine : {};
   return {
-    provider: ['mymemory', 'ai'].includes(input.provider) ? input.provider : (hasModel ? 'ai' : 'mymemory'),
+    provider: ['mymemory', 'google', 'ai'].includes(input.provider) ? input.provider : (hasModel ? 'ai' : 'mymemory'),
     source: LANGUAGE_CODES.includes(input.source) ? input.source : DEFAULT_ENGINE.source,
     target: LANGUAGE_CODES.includes(input.target) ? input.target : DEFAULT_ENGINE.target
   };
@@ -34,7 +34,7 @@ export function splitSegments(text, maxBytes = 500) {
   return result;
 }
 
-function decodeEntities(text) {
+export function decodeEntities(text) {
   const named = {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'"};
   return text.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (match, entity) => {
     if (named[entity.toLowerCase()]) return named[entity.toLowerCase()];
