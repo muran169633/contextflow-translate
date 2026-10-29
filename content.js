@@ -5,7 +5,11 @@
   const ROOT_CLASS = "cf-translation";
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, total: 0, items: []};
+  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, total: 0, items: [], messages: {}};
+  function uiText(key, values = {}) {
+    const template = state.messages[key] || key;
+    return template.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? String(values[name]) : match);
+  }
 
   function rootElement() {
     return document.querySelector("article") ||
@@ -77,11 +81,11 @@
     const toolbar = document.createElement("div");
     toolbar.className = "cf-translation-toolbar";
     const label = document.createElement("span");
-    label.textContent = failed ? "TRANSLATION FAILED" : "AI TRANSLATION";
+    label.textContent = failed ? uiText("translationFailed") : uiText("translationLabel");
     const retry = document.createElement("button");
     retry.type = "button";
-    retry.textContent = "Retry";
-    retry.title = notice || "Translate this passage again (bypasses cache)";
+    retry.textContent = uiText("retry");
+    retry.title = notice || uiText("retryTitle");
     retry.addEventListener("click", () => retryParagraph(item, box));
     toolbar.append(label, retry);
 
@@ -107,7 +111,7 @@
     const body = node.querySelector(".cf-translation-body");
     const button = node.querySelector("button");
     button.disabled = true;
-    body.textContent = "Rechecking context and translating...";
+    body.textContent = uiText("rechecking");
     try {
       const position = state.items.indexOf(item);
       const context = position >= 0 ? getContext(state.items, position, position + 1) : {
@@ -120,7 +124,7 @@
       if (!result?.ok) throw new Error(result?.error || "Unknown API error");
       renderTranslation(item, result.translations[item.id]);
     } catch (error) {
-      renderTranslation(item, `Translation failed: ${String(error.message || error)}`, {failed: true});
+      renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
     }
   }
 
@@ -129,7 +133,7 @@
     for (let index = 0; index < items.length; index += batchSize) {
       if (state.stop || state.token !== token) break;
       const group = items.slice(index, index + batchSize);
-      showToast(`ContextFlow: translating ${index + 1}-${index + group.length} / ${items.length} ...`);
+      showToast(uiText("translating", {from: index + 1, to: index + group.length, total: items.length}));
       try {
         const response = await chrome.runtime.sendMessage({
           type: "CF_TRANSLATE",
@@ -145,7 +149,7 @@
       } catch (error) {
         if (state.stop || state.token !== token) break;
         for (const item of group) {
-          renderTranslation(item, `Unable to translate this paragraph. ${String(error.message || error)}`, {failed: true});
+          renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
           state.failed++;
         }
       }
@@ -153,13 +157,14 @@
     if (state.token !== token) return;
     state.running = false;
     if (state.stop) {
-      showToast(`Stopped. ${state.done} translated, ${state.failed} failed.`, "warn");
+      showToast(uiText("progressStopped", {done: state.done, failed: state.failed}), "warn");
     } else {
-      showToast(`Done: ${state.done} translated, ${state.failed} failed. Original text preserved.`, state.failed ? "warn" : "done");
+      showToast(uiText("progressDone", {done: state.done, failed: state.failed}), state.failed ? "warn" : "done");
     }
   }
 
   function startTranslation(preferences) {
+    state.messages = preferences?.messages || {};
     state.token++;
     state.stop = false;
     state.done = 0;
@@ -171,14 +176,14 @@
     state.items = entries;
     if (!entries.length) {
       state.running = false;
-      showToast("No suitable article paragraphs found on this page.", "warn");
+      showToast(uiText("noParagraphs"), "warn");
       return {started: false, found: 0};
     }
     const token = state.token;
     void processParagraphs(entries, token).catch(error => {
       if (state.token === token) {
         state.running = false;
-        showToast(`Translation stopped: ${String(error.message || error)}`, "warn");
+        showToast(uiText("progressError", {error: String(error.message || error)}), "warn");
       }
     });
     return {started: true, found: entries.length};

@@ -1,4 +1,8 @@
 import {DEFAULT_SETTINGS, normalizeEndpoint, hostPermissionPattern} from "./core.mjs";
+import {setupLanguage, translate} from "./ui-language.mjs";
+import {localizeError} from "./i18n.mjs";
+let language = "en";
+const t = (key, values) => translate(language, key, values);
 const $ = id => document.getElementById(id);
 
 function status(text, kind = "info") {
@@ -37,22 +41,22 @@ async function saveAndMaybeTest(test) {
     const data = settingsFromForm();
     normalizeEndpoint(data.endpoint);
     const pattern = hostPermissionPattern(data.endpoint);
-    if (test && !data.model) throw new Error("Enter your model ID before testing the API.");
+    if (test && !data.model) throw new Error(t("needTestModel"));
     // Request exactly one origin, even though optional patterns cover HTTPS broadly.
     // Request directly from this button's user gesture.
     const permitted = await chrome.permissions.request({origins: [pattern]});
-    if (!permitted) throw new Error("API domain permission was denied. The extension cannot contact your model without it.");
+    if (!permitted) throw new Error(t("permissionDenied"));
     await chrome.storage.local.set({settings: data});
     if (!test) {
-      status(`Saved. API endpoint: ${normalizeEndpoint(data.endpoint)}. Return to the webpage and click Translate.`, "success");
+      status(t("saved", {endpoint: normalizeEndpoint(data.endpoint)}), "success");
       return;
     }
-    status("Testing the OpenAI-compatible endpoint with a short translation...", "info");
+    status(t("testing"), "info");
     const response = await chrome.runtime.sendMessage({type: "CF_TEST"});
-    if (!response?.ok) throw new Error(response?.error || "Unexpected API test error.");
-    status(`Connected! Sample translation: ${response.sample}${response.reviewed ? " (reviewed)" : ""}`, "success");
+    if (!response?.ok) throw new Error(response?.error || t("testError"));
+    status(t("connected", {sample: response.sample, reviewed: response.reviewed ? t("reviewed") : ""}), "success");
   } catch (error) {
-    status(String(error?.message || error), "error");
+    status(localizeError(language, error), "error");
   } finally {
     save.disabled = testButton.disabled = false;
   }
@@ -62,7 +66,9 @@ $("test").addEventListener("click", () => saveAndMaybeTest(true));
 $("clearCache").addEventListener("click", async () => {
   try {
     await chrome.storage.local.remove("translationCache");
-    status("Local translation cache cleared. API credentials and glossary were preserved.", "success");
+    status(t("cacheCleared"), "success");
   } catch (error) { status(String(error?.message || error), "error"); }
 });
 void restore().catch(error => status(String(error?.message || error), "error"));
+
+void setupLanguage(next => { language = next; }).catch(error => status(String(error?.message || error), "error"));

@@ -9,92 +9,93 @@
 <body class="options-body">
   <div class="options-shell">
     <header class="top">
-      <div class="brand-row"><div class="brand-logo">CF</div><div><h1>ContextFlow Translate</h1><div class="version">Connection and translation preferences</div></div></div>
-      <p>Bring your own model, translate in context, and build a reliable terminology glossary.</p>
+      <div class="brand-row"><div class="brand-logo">CF</div><div><h1>ContextFlow Translate</h1><div class="version" data-i18n="optionsSubtitle">Connection and translation preferences</div></div></div>
+      <p data-i18n="optionsIntro">Bring your own model, translate in context, and build a terminology glossary.</p>
     </header>
     <main class="panel">
+      <div class="field"><label for="uiLanguage" data-i18n="language">Interface language</label><select id="uiLanguage"><option value="zh-CN">简体中文</option><option value="en">English</option><option value="ja">日本語</option><option value="es">Español</option></select></div>
       <section>
-        <h2 class="section-heading">1. AI connection / API &#37197;&#32622;</h2>
-        <p class="section-help">Supports OpenAI-compatible chat/completions endpoints, including most personal API gateways and local Ollama-compatible servers.</p>
+        <h2 class="section-heading" data-i18n="connection">1. AI connection</h2>
+        <p class="section-help" data-i18n="connectionHelp">OpenAI-compatible endpoints.</p>
         <div class="field">
-          <label for="endpoint">API base URL</label>
+          <label for="endpoint" data-i18n="endpoint">API base URL</label>
           <input id="endpoint" type="url" placeholder="https://api.openai.com/v1" spellcheck="false" autocomplete="off">
-          <small>Use your provider's base URL ending in /v1, or paste the full /chat/completions URL. HTTPS required except localhost.</small>
+          <small data-i18n="endpointHelp"></small>
         </div>
         <div class="form-grid">
           <div class="field">
-            <label for="model">Model ID</label>
-            <input id="model" type="text" placeholder="Your model name" spellcheck="false" autocomplete="off">
-            <small>Use exactly the name exposed by your provider.</small>
+            <label for="model" data-i18n="model">Model ID</label>
+            <input id="model" type="text" placeholder="Your model name" data-i18n-placeholder="modelPlaceholder" spellcheck="false" autocomplete="off">
+            <small data-i18n="modelHelp"></small>
           </div>
           <div class="field">
-            <label for="apiKey">API key</label>
-            <input id="apiKey" type="password" placeholder="sk-... (blank for local APIs)" spellcheck="false" autocomplete="new-password">
-            <small>Stored locally in your Chrome profile; never pasted into the webpage DOM.</small>
+            <label for="apiKey" data-i18n="apiKey">API key</label>
+            <input id="apiKey" type="password" placeholder="sk-... (blank for local APIs)" data-i18n-placeholder="apiKeyPlaceholder" spellcheck="false" autocomplete="new-password">
+            <small data-i18n="apiKeyHelp"></small>
           </div>
         </div>
       </section>
       <hr>
       <section>
-        <h2 class="section-heading">2. Translation quality / &#32763;&#35793;&#36136;&#37327;</h2>
-        <p class="section-help">Fidelity and terminology matter more than writing something that merely sounds fluent.</p>
+        <h2 class="section-heading" data-i18n="quality">2. Translation quality</h2>
+        <p class="section-help" data-i18n="qualityHelp"></p>
         <div class="form-grid">
           <div class="field">
-            <label for="source">Source language</label>
+            <label for="source" data-i18n="source">Source language</label>
             <select id="source">
-              <option value="auto">Auto detect</option>
-              <option value="English">English</option>
-              <option value="Simplified Chinese (zh-CN)">Simplified Chinese</option>
-              <option value="Japanese">Japanese</option>
-              <option value="Korean">Korean</option>
-              <option value="German">German</option>
-              <option value="French">French</option>
+              <option value="auto" data-i18n="auto">Auto detect</option>
+              <option value="English" data-i18n="english">English</option>
+              <option value="Simplified Chinese (zh-CN)" data-i18n="chinese">Simplified Chinese</option>
+              <option value="Japanese" data-i18n="japanese">Japanese</option>
+              <option value="Korean" data-i18n="korean">Korean</option>
+              <option value="German" data-i18n="german">German</option>
+              <option value="French" data-i18n="french">French</option>
             </select>
           </div>
           <div class="field">
-            <label for="target">Target language</label>
+            <label for="target" data-i18n="target">Target language</label>
             <input id="target" type="text" placeholder="Simplified Chinese (zh-CN)" spellcheck="false">
           </div>
           <div class="field">
-            <label for="style">Translation style</label>
+            <label for="style" data-i18n="style">Translation style</label>
             <select id="style">
-              <option value="faithful">High fidelity (recommended)</option>
-              <option value="technical">Technical / programming</option>
-              <option value="academic">Academic / research</option>
-              <option value="natural">Fluent / natural</option>
+              <option value="faithful" data-i18n="faithful">High fidelity</option>
+              <option value="technical" data-i18n="technical">Technical</option>
+              <option value="academic" data-i18n="academic">Academic</option>
+              <option value="natural" data-i18n="natural">Natural</option>
             </select>
           </div>
           <div class="field">
-            <label for="maxBlocks">Maximum paragraphs per click</label>
+            <label for="maxBlocks" data-i18n="maxBlocks">Maximum paragraphs per click</label>
             <input id="maxBlocks" type="number" min="1" max="150" step="1">
-            <small>Limits provider costs. Default: 50 paragraphs.</small>
+            <small data-i18n="maxHelp"></small>
           </div>
         </div>
         <div class="field">
-          <label for="glossary">Glossary / &#26415;&#35821;&#34920;</label>
+          <label for="glossary" data-i18n="glossary">Glossary</label>
           <textarea id="glossary" spellcheck="false" placeholder="prompt => &#25552;&#31034;&#35789;&#10;inference => &#25512;&#29702;&#10;latency => &#24310;&#36831;"></textarea>
-          <small>One term per line: source =&gt; preferred translation. Up to 60 terms sent per request. Lines beginning with # are comments.</small>
+          <small data-i18n="glossaryHelp"></small>
         </div>
         <div class="check-row">
           <input type="checkbox" id="review">
-          <label for="review">Second-pass fidelity review (experimental)
-            <small>Asks the model to independently correct missing negations, wrong numbers, and terminology errors. Can nearly double API cost and latency; does not guarantee accuracy.</small>
+          <label for="review"><span data-i18n="review">Second-pass fidelity review</span>
+            <small data-i18n="reviewHelp"></small>
           </label>
         </div>
         <div class="check-row">
           <input type="checkbox" id="cache">
-          <label for="cache">Local translation cache
-            <small>Store results in the Chrome profile for 7 days to avoid paying twice for the same context. Disable for sensitive reading.</small>
+          <label for="cache"><span data-i18n="cache">Local translation cache</span>
+            <small data-i18n="cacheHelp"></small>
           </label>
         </div>
       </section>
-      <div class="note">Privacy: when you press Translate, selected page paragraphs, the page title, surrounding text, and glossary entries are sent directly to the AI endpoint you chose. Do not translate confidential pages using an untrusted provider. The API key is kept locally but is not encrypted with an app-specific password.</div>
+      <div class="note" data-i18n="privacy"></div>
       <div class="form-actions">
-        <button class="button primary" id="save" type="button">Save settings</button>
-        <button class="button" id="test" type="button">Save &amp; test API</button>
-        <button class="button danger" id="clearCache" type="button">Clear cache</button>
+        <button class="button primary" id="save" type="button" data-i18n="save">Save settings</button>
+        <button class="button" id="test" type="button" data-i18n="test">Save &amp; test API</button>
+        <button class="button danger" id="clearCache" type="button" data-i18n="clearCache">Clear cache</button>
       </div>
-      <div id="message" class="message" role="status">Configure your API endpoint and save. Chrome will ask permission to contact that API domain.</div>
+      <div id="message" class="message" role="status" data-i18n="optionsHint"></div>
     </main>
   </div>
   <script type="module" src="options.js"></script>

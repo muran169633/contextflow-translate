@@ -15,6 +15,9 @@ A small, original Chrome / Edge Manifest V3 bilingual webpage translation extens
 - Per-paragraph retry; stop translation; remove all overlays.
 - Optional 7-day local cache (up to 200 batched results).
 - On-demand `activeTab` access: no always-on webpage monitoring.
+- Interface language selection: Simplified Chinese, English, Japanese, or
+  Spanish. The selection is stored locally and is independent of the
+  translation target language.
 - Copy Kaggle discussions, including replies returned in collapsed threads,
   with author and direct-reply labels; structured comments on other sites are
   supported when available.
@@ -29,6 +32,12 @@ A small, original Chrome / Edge Manifest V3 bilingual webpage translation extens
 6. Click **Save & test API**; Chrome will ask for permission to contact only the configured API host. The test translates a short sentence and may incur a tiny provider charge.
 7. Open any ordinary `https://` article, click the extension icon and choose **Translate page**. Look for translations underneath the original paragraphs and a status indicator in the bottom-right corner.
 8. Use **Stop** to halt future batches, **Remove** to clear overlays, or **Retry** to retranslate an individual paragraph without cache.
+
+Select **Interface language** in the popup or settings to change the UI.
+On first use the extension follows the browser language when supported and
+otherwise defaults to English. Switching the interface does not change the
+source or target language, model, or glossary. Provider and browser errors may
+still appear in their original language.
 
 ### 复制讨论
 
@@ -106,6 +115,7 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 popup.html/js            Click-to-translate and remove overlays
 discussion.js            Read Kaggle or structured discussion data
 discussion-core.mjs      Format authors and nested replies for the clipboard
+i18n.mjs/ui-language.mjs Interface translations and saved language selection
 options.html/js          Provider and translation-quality settings
 content.js/css           Extract source paragraphs and render bilingual text
 background.js            Host-permission-checked API requests and cache

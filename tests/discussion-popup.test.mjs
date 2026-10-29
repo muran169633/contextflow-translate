@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 
 test("复制按钮读取当前标签并写入剪贴板", async () => {
   const elements = new Map();
-  for (const id of ["message", "model", "detail", "start", "stop", "clear", "copy-discussion", "settings"]) {
+  for (const id of ["message", "model", "detail", "start", "stop", "clear", "copy-discussion", "settings", "uiLanguage"]) {
     elements.set(id, {textContent: "", className: "", disabled: false, addEventListener(_type, fn) { this.click = fn; }});
   }
   const buttons = ["start", "stop", "clear", "copy-discussion", "settings"].map(id => elements.get(id));
   const copied = Promise.withResolvers();
   let installed;
-  globalThis.document = {getElementById: id => elements.get(id), querySelectorAll: () => buttons};
-  Object.defineProperty(globalThis, "navigator", {configurable: true, value: {clipboard: {writeText: async text => copied.resolve(text)}}});
+  globalThis.document = {documentElement: {}, getElementById: id => elements.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
+  Object.defineProperty(globalThis, "navigator", {configurable: true, value: {language: 'zh-CN', clipboard: {writeText: async text => copied.resolve(text)}}});
   globalThis.chrome = {
     storage: {local: {get: async () => ({})}},
     tabs: {query: async () => [{id: 7, url: "https://www.kaggle.com/discussion/123"}], sendMessage: async (_id, message) => {
@@ -22,6 +22,7 @@ test("复制按钮读取当前标签并写入剪贴板", async () => {
   };
   try {
     await import("../popup.js");
+    await new Promise(resolve => setImmediate(resolve));
     elements.get("copy-discussion").click();
     assert.equal(await copied.promise, "甲：\n主题\n\n乙 回复 甲：\n回复");
     await new Promise(resolve => setImmediate(resolve));

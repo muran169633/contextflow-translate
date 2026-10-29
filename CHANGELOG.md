@@ -5,6 +5,8 @@
 - Added contribution guidance and documented the project maintainer.
 - Added copying of Kaggle discussions, including returned collapsed replies,
   and a limited fallback for structured comments on other sites.
+- Added a persistent interface-language selector for Simplified Chinese,
+  English, Japanese and Spanish, independent of translation settings.
 
 ## 0.1.0 — initial source import
 

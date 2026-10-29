@@ -1,7 +1,11 @@
 import {DEFAULT_SETTINGS} from "./core.mjs";
 import {formatDiscussion} from "./discussion-core.mjs";
+import {setupLanguage, translate} from "./ui-language.mjs";
+import {contentMessages} from "./i18n.mjs";
 const $ = id => document.getElementById(id);
 let busy = false;
+let language = "en";
+const t = (key, values) => translate(language, key, values);
 
 function status(text, kind = "info") {
   $("message").textContent = text;
@@ -15,15 +19,15 @@ async function settings() {
 
 async function updateSettingsPreview() {
   const data = await settings();
-  $("model").textContent = data.model || "No model configured";
-  $("detail").textContent = `${data.target} / ${data.style}${data.review ? " / review ON" : ""}`;
+  $("model").textContent = data.model || t("noModel");
+  $("detail").textContent = `${data.target} / ${t(data.style)}${data.review ? ` / ${t("reviewOn")}` : ""}`;
 }
 
 async function currentTab() {
   const tabs = await chrome.tabs.query({active: true, currentWindow: true});
   const tab = tabs[0];
   if (!tab?.id || !/^https?:\/\//.test(tab.url || "")) {
-    throw new Error("Open an ordinary http/https webpage. Chrome internal pages and PDF viewers cannot be translated in this MVP.");
+    throw new Error(t("invalidTab"));
   }
   return tab;
 }
@@ -45,14 +49,15 @@ async function copyDiscussion() {
   busy = true;
   for (const button of document.querySelectorAll("button")) button.disabled = true;
   try {
-    status("正在读取讨论及回复……");
+    status(t("readingDiscussion"));
     const tab = await currentTab();
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["discussion.js"]});
     const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_COPY_DISCUSSION"});
-    if (!result?.ok) throw new Error(result?.error || "无法读取讨论。");
-    const formatted = formatDiscussion(result.topic);
+    if (!result?.ok) throw new Error(result?.errorKey ? t(result.errorKey, result.values) : result?.error || t("copyError"));
+    const formatted = formatDiscussion(result.topic, {emptyMessage: t("noDiscussion")});
     await navigator.clipboard.writeText(formatted.text);
-    status(`已复制 ${formatted.count} 条内容。${result.warning || ""}`, result.warning ? "info" : "success");
+    const warning = result.warningKey ? t(result.warningKey, result.warningValues) : "";
+    status(`${t("copied", {count: formatted.count})}${warning}`, warning ? "info" : "success");
   } catch (error) {
     status(String(error?.message || error), "error");
   } finally {
@@ -68,18 +73,18 @@ async function runAction(kind) {
   try {
     if (kind === "CF_START") {
       const config = await settings();
-      if (!config.model.trim()) throw new Error("First open Settings and enter an OpenAI-compatible model ID.");
-      status("Starting the translation...", "info");
-      const result = await communicate(kind, {maxBlocks: config.maxBlocks});
+      if (!config.model.trim()) throw new Error(t("needModel"));
+      status(t("starting"), "info");
+      const result = await communicate(kind, {maxBlocks: config.maxBlocks, messages: contentMessages(language)});
       status(result.started
-        ? `Started with ${result.found} content blocks. Follow progress in the page's bottom-right corner.`
-        : "No article paragraphs found on this webpage.", result.started ? "success" : "error");
+        ? t("started", {count: result.found})
+        : t("noParagraphs"), result.started ? "success" : "error");
     } else if (kind === "CF_STOP") {
       await communicate(kind);
-      status("Stopped scheduling new batches. An in-flight API call may still incur charges.", "success");
+      status(t("stopped"), "success");
     } else if (kind === "CF_CLEAR") {
       await communicate(kind);
-      status("Translation overlays removed. Original text is unchanged.", "success");
+      status(t("cleared"), "success");
     }
   } catch (error) {
     status(String(error?.message || error), "error");
@@ -94,4 +99,7 @@ $("stop").addEventListener("click", () => runAction("CF_STOP"));
 $("clear").addEventListener("click", () => runAction("CF_CLEAR"));
 $("copy-discussion").addEventListener("click", () => void copyDiscussion());
 $("settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
-void updateSettingsPreview().catch(error => status(String(error?.message || error), "error"));
+void setupLanguage(next => {
+  language = next;
+  void updateSettingsPreview().catch(error => status(String(error?.message || error), "error"));
+}).catch(error => status(String(error?.message || error), "error"));

@@ -1,7 +1,7 @@
 // The input is normalized data, not HTML; Markdown and code remain intact.
-export function formatDiscussion(topic) {
+export function formatDiscussion(topic, {emptyMessage = "没有找到可复制的讨论内容。"} = {}) {
   if (!topic || (!topic.firstMessage && !Array.isArray(topic.comments))) {
-    throw new Error("没有找到可复制的讨论内容。");
+    throw new Error(emptyMessage);
   }
   const sections = [];
   const authorOf = (item, fallback = "") =>
@@ -15,6 +15,6 @@ export function formatDiscussion(topic) {
   if (topic.firstMessage) append(topic.firstMessage, "", topic.authorUserDisplayName || topic.authorUserName);
   const rootAuthor = topic.firstMessage ? authorOf(topic.firstMessage, topic.authorUserDisplayName || topic.authorUserName) : "";
   for (const comment of Array.isArray(topic.comments) ? topic.comments : []) append(comment, rootAuthor);
-  if (!sections.length) throw new Error("没有找到可复制的讨论内容。");
+  if (!sections.length) throw new Error(emptyMessage);
   return {text: sections.join("\n\n"), count: sections.length};
 }
