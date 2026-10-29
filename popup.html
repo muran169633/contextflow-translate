@@ -12,34 +12,48 @@
     <div class="header-mark">✦</div>
   </header>
   <main class="popup-main">
-    <div class="popup-intro"><div><p class="popup-overline">CONTEXTFLOW / 01</p><h2 data-i18n="workspace">Your reading companion</h2></div><span class="intro-spark">✳</span></div>
     <section class="popup-card" aria-label="Translation">
       <div class="card-heading"><div class="section-icon">↗</div><div><strong data-i18n="engineTitle">Translation engine</strong><p data-i18n="engineSubtitle">Choose how to translate</p></div></div>
       <div class="field"><label for="provider" data-i18n="provider">Provider</label><select id="provider" disabled><option value="mymemory" data-i18n="freeProvider">MyMemory · free</option><option value="google-web" data-i18n="googleWebProvider">Google Translate · free (unofficial)</option><option value="google">Google Cloud Translation</option><option value="youdao" data-i18n="youdaoProvider">Youdao Cloud Translation</option><option value="microsoft" data-i18n="microsoftProvider">Microsoft Translator</option><option value="ai" data-i18n="aiProvider">Your AI model</option></select></div>
       <div id="free-controls">
         <div class="language-pair"><div class="field"><label for="freeSource" data-i18n="source">Source language</label><select id="freeSource" disabled></select></div><span class="pair-arrow">→</span><div class="field"><label for="freeTarget" data-i18n="target">Target language</label><select id="freeTarget" disabled></select></div></div>
         <div id="mymemory-info"><div class="provider-note"><span class="note-dot"></span><span data-i18n="freeNote">No account required. Anonymous use is limited to 5,000 characters per day.</span></div>
+          <details class="provider-details"><summary data-i18n="providerDetails">Service details and privacy</summary>
           <p class="provider-privacy" data-i18n="freePrivacy">Text is sent to MyMemory, which may retain and share it with service partners. Avoid confidential content.</p>
           <a class="provider-link" href="https://mymemory.translated.net/terms-and-conditions" target="_blank" rel="noreferrer" data-i18n="providerTerms">Provider terms &amp; privacy</a>
+          </details>
         </div>
         <div id="google-info" hidden><div class="provider-note"><span class="note-dot"></span><span data-i18n="googleNote">Requires a Google Cloud API key and billing account. Usage beyond the free credit can incur charges.</span></div>
+          <details class="provider-details"><summary data-i18n="providerDetails">Service details and privacy</summary>
           <p class="provider-privacy" data-i18n="googlePrivacy">Selected text is sent to Google Cloud Translation. Add the key in Settings.</p>
           <a class="provider-link" href="https://cloud.google.com/translate/pricing" target="_blank" rel="noreferrer" data-i18n="googlePricing">Google pricing</a>
+          </details>
         </div>
         <div id="google-web-info" hidden><div class="provider-note"><span class="note-dot"></span><span data-i18n="googleWebNote">No key required. This unofficial endpoint can be throttled or stop working.</span></div>
+          <details class="provider-details"><summary data-i18n="providerDetails">Service details and privacy</summary>
           <p class="provider-privacy" data-i18n="googleWebPrivacy">Selected text is sent to Google Translate. This endpoint is not an officially supported API.</p>
+          </details>
         </div>
         <div id="youdao-info" hidden><div class="provider-note"><span class="note-dot"></span><span data-i18n="youdaoNote"></span></div>
+          <details class="provider-details"><summary data-i18n="providerDetails">Service details and privacy</summary>
           <p class="provider-privacy" data-i18n="youdaoPrivacy"></p>
           <a class="provider-link" href="https://ai.youdao.com/new/product-fanyi-text.s" target="_blank" rel="noreferrer" data-i18n="youdaoPricing"></a>
+          </details>
         </div>
         <div id="microsoft-info" hidden><div class="provider-note"><span class="note-dot"></span><span data-i18n="microsoftNote"></span></div>
+          <details class="provider-details"><summary data-i18n="providerDetails">Service details and privacy</summary>
           <p class="provider-privacy" data-i18n="microsoftPrivacy"></p>
           <a class="provider-link" href="https://azure.microsoft.com/en-us/pricing/details/cognitive-services/translator/" target="_blank" rel="noreferrer" data-i18n="microsoftPricing"></a>
+          </details>
         </div>
         <p class="provider-privacy" data-i18n="notSupportedFree">This translation does not use context, glossaries, or second-pass review.</p>
       </div>
       <div id="ai-controls" hidden><div class="model-line"><span data-i18n="activeModel">Active AI model</span><strong id="model" data-i18n="loading">Loading…</strong><span id="detail"></span></div><p class="provider-privacy" data-i18n="aiNote">Configure your model and endpoint in Settings.</p></div>
+      <div class="display-label" id="display-label" data-i18n="displayMode">Page display</div>
+      <div class="display-switch" role="group" aria-labelledby="display-label">
+        <button type="button" class="display-option" id="mode-bilingual" aria-pressed="true" data-i18n="displayBilingual">Bilingual</button>
+        <button type="button" class="display-option" id="mode-original" aria-pressed="false" data-i18n="displayOriginal">Original</button>
+      </div>
       <button type="button" class="button primary popup-primary" id="start" disabled><span>✦</span><span data-i18n="start">Translate page</span><span class="button-arrow">↗</span></button>
       <div id="message" class="message" role="status" data-i18n="popupHint">Page content is not sent until you click Translate.</div>
       <p class="provider-privacy" id="dynamicInfo"></p>

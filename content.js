@@ -5,7 +5,7 @@
   const ROOT_CLASS = "cf-translation";
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", truncated: false, dynamic: false, dynamicDirty: false, maxBlocks: 50};
+  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", truncated: false, dynamic: false, dynamicDirty: false, maxBlocks: 50, displayMode: "bilingual"};
   let observer, dynamicTimer;
   let quickControl, quickTranslateButton, quickCloseButton;
   let quickPosition = null;
@@ -244,6 +244,7 @@
     const box = document.createElement("div");
     box.className = ROOT_CLASS;
     box.setAttribute("data-contextflow-owned", "true");
+    if (state.displayMode === "original") box.classList.add("cf-hidden");
     if (failed) box.classList.add("cf-error");
 
     const toolbar = document.createElement("div");
@@ -508,7 +509,15 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 13, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 14, running: state.running, count: state.total, displayMode: state.displayMode});
+    } else if (message?.type === "CF_SET_DISPLAY") {
+      if (!["bilingual", "original"].includes(message.mode)) {
+        sendResponse({ok: false});
+        return;
+      }
+      state.displayMode = message.mode;
+      for (const node of document.querySelectorAll(".cf-translation")) node.classList.toggle("cf-hidden", state.displayMode === "original");
+      sendResponse({ok: true, displayMode: state.displayMode});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});

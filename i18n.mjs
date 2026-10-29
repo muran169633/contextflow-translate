@@ -161,6 +161,27 @@ Object.assign(messages.es, {dynamicEnabled:'La traducción automática está act
 Object.assign(messages.de, {dynamicEnabled:'Automatische Übersetzung ist aktiv: Neue sichtbare Inhalte werden an den Dienst gesendet und können Kontingent oder Kosten verursachen. In den Einstellungen abschaltbar.', dynamicDisabled:'Automatische Übersetzung ist aus: Neue Inhalte manuell übersetzen.'});
 Object.assign(messages.ko, {dynamicEnabled:'자동 번역이 켜져 있습니다. 새로 표시된 내용이 서비스로 전송되어 할당량이나 요금이 발생할 수 있습니다. 설정에서 끌 수 있습니다.', dynamicDisabled:'자동 번역이 꺼져 있습니다. 새 내용은 수동으로 번역하세요.'});
 
+Object.assign(messages['zh-CN'], {displayMode:'页面显示', displayBilingual:'双语对照', displayOriginal:'仅看原文', displayError:'无法切换页面显示，请刷新网页后重试。', showingOriginal:'已显示原文，译文暂时隐藏。', showingBilingual:'已显示双语对照。'});
+Object.assign(messages.en, {displayMode:'Page display', displayBilingual:'Bilingual', displayOriginal:'Original', displayError:'Could not change the page display. Refresh the page and try again.', showingOriginal:'Showing original text; translations are hidden.', showingBilingual:'Showing the bilingual page.'});
+Object.assign(messages.ja, {displayMode:'ページの表示', displayBilingual:'対訳', displayOriginal:'原文のみ', displayError:'表示を切り替えられません。ページを更新して再試行してください。', showingOriginal:'原文を表示中。訳文は非表示です。', showingBilingual:'対訳を表示中。'});
+Object.assign(messages.es, {displayMode:'Vista de la página', displayBilingual:'Bilingüe', displayOriginal:'Original', displayError:'No se pudo cambiar la vista. Actualiza la página e inténtalo de nuevo.', showingOriginal:'Se muestra el original; las traducciones están ocultas.', showingBilingual:'Se muestra la vista bilingüe.'});
+Object.assign(messages.de, {displayMode:'Seitenansicht', displayBilingual:'Zweisprachig', displayOriginal:'Original', displayError:'Die Ansicht konnte nicht geändert werden. Lade die Seite neu und versuche es erneut.', showingOriginal:'Original wird angezeigt; Übersetzungen sind ausgeblendet.', showingBilingual:'Zweisprachige Ansicht wird angezeigt.'});
+Object.assign(messages.ko, {displayMode:'페이지 표시', displayBilingual:'원문·번역', displayOriginal:'원문만', displayError:'화면을 변경할 수 없습니다. 페이지를 새로고침하고 다시 시도하세요.', showingOriginal:'원문이 표시되고 번역은 숨겨집니다.', showingBilingual:'원문과 번역이 표시됩니다.'});
+
+Object.assign(messages['zh-CN'], {providerDetails:'服务说明、隐私与费用'});
+Object.assign(messages.en, {providerDetails:'Service details, privacy and pricing'});
+Object.assign(messages.ja, {providerDetails:'サービス、プライバシーと料金'});
+Object.assign(messages.es, {providerDetails:'Servicio, privacidad y precios'});
+Object.assign(messages.de, {providerDetails:'Dienst, Datenschutz und Preise'});
+Object.assign(messages.ko, {providerDetails:'서비스, 개인정보 및 요금'});
+
+Object.assign(messages['zh-CN'], {translationLabel:'译文'});
+Object.assign(messages.en, {translationLabel:'Translation'});
+Object.assign(messages.ja, {translationLabel:'訳文'});
+Object.assign(messages.es, {translationLabel:'Traducción'});
+Object.assign(messages.de, {translationLabel:'Übersetzung'});
+Object.assign(messages.ko, {translationLabel:'번역'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);

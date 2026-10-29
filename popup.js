@@ -17,7 +17,26 @@ let quickReady = false;
 let googleKeyPresent = false;
 let youdaoKeysPresent = false;
 let microsoftKeyPresent = false;
+let displayMode = "bilingual";
+let displayQueue = Promise.resolve();
 const t = (key, values) => translate(language, key, values);
+
+function renderDisplayMode() {
+  for (const mode of ["bilingual", "original"]) $("mode-" + mode).setAttribute("aria-pressed", String(displayMode === mode));
+}
+
+async function setDisplayMode(mode) {
+  if (busy) return;
+  try {
+    await quickSetup;
+    if (mode === displayMode) return;
+    const result = await communicate("CF_SET_DISPLAY", {mode});
+    if (!result?.ok) throw new Error(t("displayError"));
+    displayMode = result.displayMode;
+    renderDisplayMode();
+    status(t(mode === "original" ? "showingOriginal" : "showingBilingual"), "success");
+  } catch (error) { status(String(error?.message || error), "error"); }
+}
 
 function renderEngine() {
   $("provider").value = engine.provider;
@@ -80,12 +99,12 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 13) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 14) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
   }
-  return await chrome.tabs.sendMessage(tab.id, {type, preferences});
+  return await chrome.tabs.sendMessage(tab.id, type === "CF_SET_DISPLAY" ? {type, mode: preferences.mode} : {type, preferences});
 }
 
 async function copyDiscussion() {
@@ -137,7 +156,7 @@ async function runAction(kind) {
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 13) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 14) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;
@@ -167,6 +186,11 @@ $("stop").addEventListener("click", () => runAction("CF_STOP"));
 $("clear").addEventListener("click", () => runAction("CF_CLEAR"));
 $("copy-discussion").addEventListener("click", () => void copyDiscussion());
 $("settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
+for (const mode of ["bilingual", "original"]) {
+  $("mode-" + mode).addEventListener("click", () => {
+    displayQueue = displayQueue.then(() => setDisplayMode(mode)).catch(error => status(String(error?.message || error), "error"));
+  });
+}
 for (const [id, key] of [["provider", "provider"], ["freeSource", "source"], ["freeTarget", "target"]]) {
   $(id).addEventListener("change", () => {
     engine[key] = $(id).value;
@@ -188,7 +212,10 @@ void (async () => {
     if (quickReady) quickSetup = quickSetup.then(() => communicate("CF_QUICK_SHOW", {messages: contentMessages(language)})).catch(() => {});
   });
   // Opening the extension grants activeTab access for this page only.
-  quickSetup = communicate("CF_QUICK_SHOW", {messages: contentMessages(language)}).catch(() => {});
+  quickSetup = communicate("CF_QUICK_SHOW", {messages: contentMessages(language)})
+    .then(() => communicate("CF_PING"))
+    .then(result => { displayMode = result?.displayMode === "original" ? "original" : "bilingual"; renderDisplayMode(); })
+    .catch(() => {});
   quickReady = true;
   for (const id of ["provider", "freeSource", "freeTarget", "start", "continue"]) $(id).disabled = false;
 })().catch(error => status(String(error?.message || error), "error"));

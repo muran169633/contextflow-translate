@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Refined the translation popup and reading style, and added a page-level
+  switch between bilingual and original views without retranslating.
+
 - Added opt-out dynamic translation for newly visible, expanded or changed
   content after starting page translation, with stop and quota notices.
 

@@ -39,7 +39,7 @@ test('网页翻译流程使用所选语言显示进度和重试按钮', async ()
   assert.equal(request.engine.source, 'en');
   assert.equal(request.engine.target, 'zh-CN');
   assert.ok(nodes[0], `未插入译文：${toast?.textContent}`);
-  assert.equal(nodes[0].children[0].children[0].textContent, 'AI 翻訳');
+  assert.equal(nodes[0].children[0].children[0].textContent, '訳文');
   assert.equal(nodes[0].children[0].children[1].textContent, '再試行');
   assert.match(toast.textContent, /完了/);
   await nodes[0].children[0].children[1].handler();

@@ -6,7 +6,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 
 ## Supported in this MVP
 
-- Bilingual paragraph translation, with the original webpage preserved.
+- Bilingual paragraph translation, with the original webpage preserved. Switch
+  between bilingual and original views in the popup without retranslating.
 - A no-account MyMemory mode with 30 selectable source and target languages.
   Availability and quality depend on the language pair and the provider.
 - An optional Google Translate web endpoint that needs no API key. This is an
