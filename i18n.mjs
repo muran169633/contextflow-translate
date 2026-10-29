@@ -189,6 +189,20 @@ Object.assign(messages.es, {preserveError:'No se pudo conservar el código o las
 Object.assign(messages.de, {preserveError:'Inline-Code oder Formeln konnten nicht erhalten werden. Versuche diesen Absatz erneut.', googleWebQuantum:'Auf Quantenschaltungsseiten werden in passenden englischen Absätzen shot und Toffolis vor dem Senden durch circuit run und Toffoli gates ersetzt. Prüfe die Übersetzung.'});
 Object.assign(messages.ko, {preserveError:'인라인 코드 또는 수식을 보존할 수 없습니다. 이 문단을 다시 시도하세요.', googleWebQuantum:'양자 회로 페이지의 관련 영어 문단은 모호성을 줄이기 위해 전송 전에 shot과 Toffolis를 circuit run과 Toffoli gates로 바꿉니다. 번역을 확인하세요.'});
 
+Object.assign(messages['zh-CN'], {kagglePermission:'翻译 Kaggle Notebook 正文需要允许访问 kaggleusercontent.com 和所选翻译服务。请打开扩展弹窗并点击“翻译网页”完成授权。', kaggleFrameWarning:'Kaggle Notebook 正文尚未连接或权限不可用；请确认允许访问 kaggleusercontent.com，等待正文加载后重新点击翻译。'});
+Object.assign(messages.en, {kagglePermission:'Translating a Kaggle Notebook requires access to kaggleusercontent.com and the selected provider. Open the extension popup and click Translate page to grant access.', kaggleFrameWarning:'The Kaggle Notebook body is unavailable or inaccessible. Allow kaggleusercontent.com access, wait for it to load, and translate again.'});
+Object.assign(messages.ja, {kagglePermission:'Kaggle Notebook 本文の翻訳には kaggleusercontent.com と選択したサービスへのアクセスが必要です。拡張機能の「ページ翻訳」から許可してください。', kaggleFrameWarning:'Kaggle Notebook 本文に接続できません。kaggleusercontent.com のアクセスを許可し、読み込み後に再試行してください。'});
+Object.assign(messages.es, {kagglePermission:'Para traducir el Notebook de Kaggle se requiere acceso a kaggleusercontent.com y al servicio elegido. Abre la extensión y pulsa Traducir página para autorizarlo.', kaggleFrameWarning:'El contenido del Notebook de Kaggle no está disponible o no es accesible. Permite el acceso a kaggleusercontent.com, espera a que cargue e inténtalo de nuevo.'});
+Object.assign(messages.de, {kagglePermission:'Für den Kaggle-Notebook-Inhalt ist Zugriff auf kaggleusercontent.com und den gewählten Dienst nötig. Öffne die Erweiterung und klicke auf Seite übersetzen.', kaggleFrameWarning:'Der Kaggle-Notebook-Inhalt ist nicht verfügbar oder nicht zugänglich. Erlaube den Zugriff auf kaggleusercontent.com, warte das Laden ab und versuche es erneut.'});
+Object.assign(messages.ko, {kagglePermission:'Kaggle Notebook 본문을 번역하려면 kaggleusercontent.com과 선택한 서비스에 대한 접근이 필요합니다. 확장 프로그램에서 페이지 번역을 눌러 허용하세요.', kaggleFrameWarning:'Kaggle Notebook 본문에 연결할 수 없습니다. kaggleusercontent.com 접근을 허용하고 본문이 로드된 후 다시 번역하세요.'});
+
+Object.assign(messages['zh-CN'], {kaggleAccess:'Notebook 正文在独立框架。翻译时将请求内容域和浏览器导航权限；Chrome 可能提示“读取浏览历史记录”。扩展仅在当前 Notebook 翻译时查询框架。'});
+Object.assign(messages.en, {kaggleAccess:'The Notebook body is in a separate frame. Translation requests content-domain and navigation access; Chrome may warn about reading browsing history. The extension queries frames only for the current Notebook translation.'});
+Object.assign(messages.ja, {kaggleAccess:'Notebook 本文は別のフレームにあります。翻訳にはコンテンツドメインとナビゲーション権限が必要で、Chrome は閲覧履歴の読み取りを警告する場合があります。拡張機能は現在の Notebook 翻訳時のみフレームを照会します。'});
+Object.assign(messages.es, {kaggleAccess:'El contenido del Notebook está en un marco separado. Se solicitará acceso al dominio y a la navegación; Chrome puede advertir sobre el historial. La extensión consulta marcos solo para traducir el Notebook actual.'});
+Object.assign(messages.de, {kaggleAccess:'Der Notebook-Inhalt liegt in einem separaten Frame. Für die Übersetzung werden Zugriff auf die Inhaltsdomain und Navigation angefragt; Chrome kann vor Lesezugriff auf den Browserverlauf warnen. Die Erweiterung fragt Frames nur für das aktuelle Notebook ab.'});
+Object.assign(messages.ko, {kaggleAccess:'Notebook 본문은 별도 프레임에 있습니다. 번역 시 콘텐츠 도메인 및 탐색 권한을 요청하며 Chrome이 방문 기록 읽기를 경고할 수 있습니다. 확장 프로그램은 현재 Notebook 번역에만 프레임을 조회합니다.'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);

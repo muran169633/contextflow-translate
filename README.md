@@ -126,6 +126,20 @@ extension warns that some content remains. With dynamic translation enabled,
 subsequent scrolling or page changes can send further batches. Longer paragraphs are split into
 bounded requests and combined for display.
 
+### Kaggle Notebook 正文
+
+Kaggle Notebook 的正文通常位于 `www.kaggleusercontent.com` 内嵌框架，
+与侧边栏不是同一个页面。打开 Notebook 后在弹窗点击**翻译网页**；首次使用
+时允许访问该内容域和浏览器导航权限，扩展才能找到当前页面中的正文框架。
+Chrome 可能将导航权限描述为“读取浏览历史记录”；扩展只在翻译当前 Kaggle
+Notebook 时查询其框架，不订阅浏览记录或保存框架 URL。正文仍发送到你选择的
+翻译服务。权限可在浏览器的扩展设置中撤销。
+
+扩展会分别处理外层页面和 Notebook 正文，并在滚动时将可见范围同步给正文。
+如果正文尚未加载或权限不可用，弹窗会提示，等待正文加载后可再次点击翻译。
+代码块和纯数字不会作为正文翻译；短表头也会纳入翻译。其他来源的嵌入式输出
+不在此适配范围内。
+
 Select **Interface language** in the popup or settings to change the UI.
 On first use the extension follows the browser language when supported and
 otherwise defaults to English. Switching the interface does not change the
@@ -193,6 +207,9 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - When using AI mode, selected passages, document title, surrounding context, and glossary terms go to **your configured AI provider**.
 - Credentials are stored in `chrome.storage.local`, accessible to trusted extension pages and the background worker, not directly to the webpage. **Local storage is not encrypted with a separate application password**; protect your OS account and Chrome profile.
 - Access to the selected provider's API origin is requested at runtime, not to every visited website. The extension uses `activeTab` permission for the open webpage.
+- Kaggle Notebook translation additionally requests optional `webNavigation`
+  and `https://www.kaggleusercontent.com/*` access. It queries frame metadata
+  for the active Notebook tab only; Chrome may warn about browsing history.
 - Translations are inserted using `textContent`, never parsed as HTML, to avoid untrusted model output injecting page markup or scripts.
 - Use HTTPS for remote endpoints. Local HTTP is permitted only for `localhost` / `127.0.0.1`.
 - Avoid feeding confidential, medical, financial, or private enterprise content to unknown API relays. The optional cache stores translated passages locally for seven days.
@@ -236,6 +253,7 @@ google-translate.mjs     Google Cloud Translation Basic adapter
 model-adapters.mjs       Compatible, Gemini and Claude API request adapters
 discussion.js            Read Kaggle or structured discussion data
 discussion-core.mjs      Format authors and nested replies for the clipboard
+kaggle-frames.mjs        Locate and translate the permitted Notebook frame
 i18n.mjs/ui-language.mjs Interface translations and saved language selection
 options.html/js          Provider and translation-quality settings
 content.js/css           Extract source paragraphs and render bilingual text

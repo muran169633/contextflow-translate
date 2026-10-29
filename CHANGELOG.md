@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added targeted translation of the Kaggle Notebook content frame, including
+  viewport tracking and short table headers. The needed navigation and content
+  host permissions are requested only when translating a Kaggle Notebook.
 - Reduced Google web requests by combining short paragraphs with boundary
   validation and same-provider single-paragraph fallback. Preserved inline
   code and short formulas where supported, and disambiguated selected quantum

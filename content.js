@@ -5,8 +5,8 @@
   const ROOT_CLASS = "cf-translation";
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", truncated: false, dynamic: false, dynamicDirty: false, maxBlocks: 50, displayMode: "bilingual"};
-  let observer, dynamicTimer;
+  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", documentTitle: "", viewport: null, truncated: false, dynamic: false, dynamicDirty: false, maxBlocks: 50, displayMode: "bilingual"};
+  let observer, dynamicTimer, viewportTimer;
   let quickControl, quickTranslateButton, quickCloseButton;
   let quickPosition = null;
   function uiText(key, values = {}) {
@@ -15,6 +15,7 @@
   }
 
   function rootElement() {
+    if (globalThis.location?.hostname === "www.kaggleusercontent.com" && globalThis.location?.pathname.startsWith("/kf/")) return document.body;
     const main = document.querySelector("main") || document.querySelector("[role='main']");
     const article = document.querySelector("article");
     // Forums often place the topic and each reply in separate article elements.
@@ -27,6 +28,11 @@
 
   function cleanText(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function validViewport(value) {
+    return Number.isFinite(value?.top) && Number.isFinite(value?.bottom) && value.top >= 0 && value.bottom >= value.top && value.bottom <= 100000000
+      ? {top: value.top, bottom: value.bottom} : null;
   }
 
   function sourceText(element) {
@@ -49,12 +55,15 @@
       if (css.visibility === "hidden" || css.display === "none") continue;
       const value = sourceText(element);
       const isHeading = /^H[1-4]$/.test(element.tagName);
-      const minimum = isHeading ? 8 : ["P", "LI", "BLOCKQUOTE", "DD"].includes(element.tagName) ? 2 : 22;
+      const minimum = isHeading ? 8 : ["P", "LI", "BLOCKQUOTE", "DD", "TH", "TD"].includes(element.tagName) ? 2 : 22;
       if (value.length < minimum || !/\p{L}/u.test(value)) continue;
       if (/^(https?:\/\/\S+|[\w-]+\.[\w-]+)$/.test(value)) continue;
+      if (/^[\d\s.,+\-−×xEe^%/()]+$/.test(value)) continue;
       if ((value.match(/[{};=<>]/g) || []).length > value.length / 8) continue;
       const rect = element.getBoundingClientRect?.();
-      const visible = !!rect && Number.isFinite(globalThis.innerHeight) && rect.bottom > 0 && rect.top < globalThis.innerHeight;
+      const top = state.viewport?.top ?? 0;
+      const bottom = state.viewport?.bottom ?? globalThis.innerHeight;
+      const visible = !!rect && Number.isFinite(bottom) && rect.bottom > top && rect.top < bottom;
       items.push({element, text: value, visible});
     }
     const truncated = items.length > limit;
@@ -311,7 +320,7 @@
 
   function getContext(items, firstIndex, lastIndex) {
     return {
-      title: cleanText(document.title).slice(0, 240),
+      title: cleanText(state.documentTitle || document.title).slice(0, 240),
       opening: items.slice(0, 4).map(item => item.text).join("\n").slice(0, 700),
       before: firstIndex > 0 ? items[firstIndex - 1].text.slice(0, 350) : "",
       after: lastIndex < items.length ? items[lastIndex].text.slice(0, 350) : ""
@@ -324,13 +333,30 @@
     observer?.disconnect();
     observer = null;
     if (dynamicTimer) clearTimeout(dynamicTimer);
+    if (viewportTimer) clearTimeout(viewportTimer);
     dynamicTimer = null;
+    viewportTimer = null;
     globalThis.removeEventListener?.("scroll", onDynamicChange, true);
     globalThis.removeEventListener?.("resize", onDynamicChange);
   }
 
-  function onDynamicChange() {
+  function notebookViewport() {
+    if (globalThis.location?.hostname !== "www.kaggle.com" || !/^\/code\/[^/]+\/[^/]+(?:\/|$)/.test(globalThis.location.pathname)) return null;
+    const frame = document.querySelector("iframe#rendered-kernel-content");
+    const rect = frame?.getBoundingClientRect();
+    if (!rect || !Number.isFinite(globalThis.innerHeight)) return null;
+    return {top: Math.max(0, -rect.top), bottom: Math.max(0, globalThis.innerHeight - rect.top)};
+  }
+
+  function onDynamicChange(event) {
     if (!state.dynamic || state.stop) return;
+    if (["scroll", "resize"].includes(event?.type) && !viewportTimer && notebookViewport()) {
+      viewportTimer = setTimeout(() => {
+        viewportTimer = null;
+        const viewport = notebookViewport();
+        if (state.dynamic && !state.stop && viewport) void chrome.runtime.sendMessage({type: "CF_NOTEBOOK_VIEWPORT", viewport}).catch(() => {});
+      }, 150);
+    }
     state.dynamicDirty = true;
     if (state.running || dynamicTimer) return;
     dynamicTimer = setTimeout(() => {
@@ -535,6 +561,8 @@
     state.messages = preferences?.messages || {};
     state.engine = preferences?.engine ? {...preferences.engine} : null;
     state.target = preferences?.target || "";
+    state.documentTitle = String(preferences?.documentTitle || "").slice(0, 240);
+    state.viewport = validViewport(preferences?.viewport);
     state.maxBlocks = Math.max(1, Math.min(150, Number(preferences?.maxBlocks) || 50));
     state.token++;
     state.stop = false;
@@ -568,7 +596,13 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 15, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 16, running: state.running, count: state.total, displayMode: state.displayMode});
+    } else if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
+      sendResponse({ok: true, viewport: notebookViewport()});
+    } else if (message?.type === "CF_SET_VIEWPORT") {
+      state.viewport = validViewport(message.viewport);
+      if (state.dynamic) onDynamicChange();
+      sendResponse({ok: true});
     } else if (message?.type === "CF_SET_DISPLAY") {
       if (!["bilingual", "original"].includes(message.mode)) {
         sendResponse({ok: false});

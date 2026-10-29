@@ -7,6 +7,7 @@ import {GOOGLE_TRANSLATE_ORIGIN} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN} from "./google-web-translate.mjs";
 import {YOUDAO_ORIGIN} from "./youdao-translate.mjs";
 import {MICROSOFT_ORIGIN} from "./microsoft-translate.mjs";
+import {KAGGLE_NOTEBOOK_ORIGIN, isKaggleNotebook, sendToKaggleNotebook} from "./kaggle-frames.mjs";
 const $ = id => document.getElementById(id);
 let busy = false;
 let language = "en";
@@ -19,6 +20,7 @@ let youdaoKeysPresent = false;
 let microsoftKeyPresent = false;
 let displayMode = "bilingual";
 let displayQueue = Promise.resolve();
+let activeTabUrl = "";
 const t = (key, values) => translate(language, key, values);
 
 function renderDisplayMode() {
@@ -34,7 +36,8 @@ async function setDisplayMode(mode) {
     if (!result?.ok) throw new Error(t("displayError"));
     displayMode = result.displayMode;
     renderDisplayMode();
-    status(t(mode === "original" ? "showingOriginal" : "showingBilingual"), "success");
+    const warning = result.notebookStatus && result.notebookStatus !== "ok" ? ` ${t("kaggleFrameWarning")}` : "";
+    status(t(mode === "original" ? "showingOriginal" : "showingBilingual") + warning, warning ? "error" : "success");
   } catch (error) { status(String(error?.message || error), "error"); }
 }
 
@@ -97,14 +100,24 @@ async function currentTab() {
 async function communicate(type, preferences) {
   const tab = await currentTab();
   let ping;
-  try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
+  try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}, {frameId: 0}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 15) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 16) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
   }
-  return await chrome.tabs.sendMessage(tab.id, type === "CF_SET_DISPLAY" ? {type, mode: preferences.mode} : {type, preferences});
+  const message = type === "CF_SET_DISPLAY" ? {type, mode: preferences.mode} : {type, preferences: preferences ? {...preferences, documentTitle: tab.title || ""} : preferences};
+  const result = await chrome.tabs.sendMessage(tab.id, message, {frameId: 0});
+  if (!isKaggleNotebook(tab.url) || !["CF_START", "CF_CONTINUE", "CF_STOP", "CF_CLEAR", "CF_SET_DISPLAY"].includes(type)) return result;
+  let frameMessage = message;
+  if (["CF_START", "CF_CONTINUE"].includes(type)) {
+    const view = await chrome.tabs.sendMessage(tab.id, {type: "CF_NOTEBOOK_VIEWPORT"}, {frameId: 0});
+    frameMessage = {...message, preferences: {...message.preferences, viewport: view?.viewport || null}};
+  }
+  const frame = await sendToKaggleNotebook(tab.id, frameMessage, ["CF_START", "CF_CONTINUE"].includes(type));
+  return {...result, notebookStatus: frame.status, found: (result?.found || 0) + frame.found,
+    started: !!result?.started || frame.started, truncated: !!result?.truncated || frame.truncated};
 }
 
 async function copyDiscussion() {
@@ -133,15 +146,19 @@ async function runAction(kind) {
   if (busy) return;
   const selectedEngine = {...engine};
   let permission;
+  const notebook = isKaggleNotebook(activeTabUrl);
+  let origin;
   if (["CF_START", "CF_CONTINUE"].includes(kind) && ["mymemory", "google-web", "google", "youdao", "microsoft"].includes(selectedEngine.provider)) {
     if (selectedEngine.source === selectedEngine.target) { status(t("sameLanguage"), "error"); return; }
     if (selectedEngine.provider === "google" && !googleKeyPresent) { status(t("googleNeedKey"), "error"); return; }
     if (selectedEngine.provider === "youdao" && !youdaoKeysPresent) { status(t("youdaoNeedKey"), "error"); return; }
     if (selectedEngine.provider === "microsoft" && !microsoftKeyPresent) { status(t("microsoftNeedKey"), "error"); return; }
     // Called synchronously from the click handler to preserve the user gesture.
-    const origin = selectedEngine.provider === "microsoft" ? MICROSOFT_ORIGIN : selectedEngine.provider === "youdao" ? YOUDAO_ORIGIN : selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : selectedEngine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
+    origin = selectedEngine.provider === "microsoft" ? MICROSOFT_ORIGIN : selectedEngine.provider === "youdao" ? YOUDAO_ORIGIN : selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : selectedEngine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
+  }
+  if (["CF_START", "CF_CONTINUE"].includes(kind) && (origin || notebook)) {
     status(t("starting"), "info");
-    try { permission = chrome.permissions.request({origins: [origin]}); }
+    try { permission = chrome.permissions.request({origins: [origin, notebook ? KAGGLE_NOTEBOOK_ORIGIN : null].filter(Boolean), ...(notebook ? {permissions: ["webNavigation"]} : {})}); }
     catch (error) { status(String(error?.message || error), "error"); return; }
   }
   busy = true;
@@ -152,24 +169,28 @@ async function runAction(kind) {
       if (!permission) status(t("starting"), "info");
       const config = await settings();
       if (selectedEngine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
-      if (permission && !await permission) throw new Error(t(selectedEngine.provider === "mymemory" ? "permissionFree" : selectedEngine.provider === "youdao" ? "permissionYoudao" : selectedEngine.provider === "microsoft" ? "permissionMicrosoft" : "permissionGoogle"));
+      if (permission && !await permission) throw new Error(t(notebook ? "kagglePermission" : selectedEngine.provider === "mymemory" ? "permissionFree" : selectedEngine.provider === "youdao" ? "permissionYoudao" : selectedEngine.provider === "microsoft" ? "permissionMicrosoft" : "permissionGoogle"));
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 15) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 16) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;
       const result = await communicate(kind, {engine: selectedEngine, target: config.target, maxBlocks: config.maxBlocks, dynamic: config.dynamic, messages: contentMessages(language)});
-      status(result.started
-        ? t("started", {count: result.found}) + (result.truncated ? ` ${t("limitWarning", {limit: result.found})}` : "")
-        : t(kind === "CF_CONTINUE" ? "noNewParagraphs" : "noParagraphs"), result.started && !result.truncated ? "success" : result.started ? "info" : "error");
+      const statusText = result.started
+        ? t("started", {count: result.found}) + (result.truncated ? ` ${t("limitWarning", {limit: config.maxBlocks})}` : "")
+        : t(kind === "CF_CONTINUE" ? "noNewParagraphs" : "noParagraphs");
+      const notebookWarning = result.notebookStatus && result.notebookStatus !== "ok" ? ` ${t("kaggleFrameWarning")}` : "";
+      status(statusText + notebookWarning, notebookWarning ? "error" : result.started && !result.truncated ? "success" : result.started ? "info" : "error");
     } else if (kind === "CF_STOP") {
-      await communicate(kind);
-      status(t("stopped"), "success");
+      const result = await communicate(kind);
+      const warning = result?.notebookStatus && result.notebookStatus !== "ok" ? ` ${t("kaggleFrameWarning")}` : "";
+      status(t("stopped") + warning, warning ? "error" : "success");
     } else if (kind === "CF_CLEAR") {
-      await communicate(kind);
-      status(t("cleared"), "success");
+      const result = await communicate(kind);
+      const warning = result?.notebookStatus && result.notebookStatus !== "ok" ? ` ${t("kaggleFrameWarning")}` : "";
+      status(t("cleared") + warning, warning ? "error" : "success");
     }
   } catch (error) {
     status(String(error?.message || error), "error");
@@ -204,6 +225,8 @@ void (async () => {
   microsoftKeyPresent = !!String(config.microsoftKey || "").trim();
   youdaoKeysPresent = !!String(config.youdaoAppKey || "").trim() && !!String(config.youdaoAppSecret || "").trim();
   const stored = await chrome.storage.local.get("translationEngine");
+  activeTabUrl = (await currentTab().catch(() => null))?.url || "";
+  $("kaggleInfo").hidden = !isKaggleNotebook(activeTabUrl);
   engine = normalizeEngine(stored.translationEngine, !!config.model.trim());
   await setupLanguage(next => {
     language = next;

@@ -8,6 +8,7 @@ import {GOOGLE_TRANSLATE_ORIGIN, translateGoogle} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN, translateGoogleWeb} from "./google-web-translate.mjs";
 import {YOUDAO_ORIGIN, translateYoudao} from "./youdao-translate.mjs";
 import {MICROSOFT_ORIGIN, translateMicrosoft} from "./microsoft-translate.mjs";
+import {KAGGLE_NOTEBOOK_ORIGIN, isKaggleNotebook, sendToKaggleNotebook} from "./kaggle-frames.mjs";
 import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
 import {contentMessages, resolveLanguage, translate} from "./i18n.mjs";
 
@@ -28,15 +29,15 @@ async function quickLocale() {
 
 async function ensureQuickPage(tabId, language) {
   let ping;
-  try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}); } catch {}
-  if (ping?.ok && ping.protocol !== 15) throw new Error(translate(language, "refreshPage"));
+  try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0}); } catch {}
+  if (ping?.ok && ping.protocol !== 16) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
-    ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"});
-    if (!ping?.ok || ping.protocol !== 15) throw new Error(translate(language, "refreshPage"));
+    ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0});
+    if (!ping?.ok || ping.protocol !== 16) throw new Error(translate(language, "refreshPage"));
   }
-  await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}});
+  await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}}, {frameId: 0});
   return ping;
 }
 
@@ -58,8 +59,19 @@ async function quickTranslate(tab) {
     if (engine.provider === "microsoft" && !String(settings.microsoftKey || "").trim()) throw new Error(translate(language, "microsoftNeedKey"));
     const origin = engine.provider === "microsoft" ? MICROSOFT_ORIGIN : engine.provider === "youdao" ? YOUDAO_ORIGIN : engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
     if (!await chrome.permissions.contains({origins: [origin]})) throw new Error(translate(language, "quickAuthorize"));
-    const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_START", preferences: {engine, target: settings.target, maxBlocks: settings.maxBlocks, dynamic: settings.dynamic, messages: contentMessages(language)}});
+    if (isKaggleNotebook(tab.url) && !await chrome.permissions.contains({permissions: ["webNavigation"], origins: [KAGGLE_NOTEBOOK_ORIGIN]})) throw new Error(translate(language, "kagglePermission"));
+    const message = {type: "CF_START", preferences: {engine, target: settings.target, documentTitle: tab.title || "", maxBlocks: settings.maxBlocks, dynamic: settings.dynamic, messages: contentMessages(language)}};
+    const result = await chrome.tabs.sendMessage(tab.id, message, {frameId: 0});
     if (!result?.ok) throw new Error(translate(language, "quickError"));
+    if (isKaggleNotebook(tab.url)) {
+      const view = await chrome.tabs.sendMessage(tab.id, {type: "CF_NOTEBOOK_VIEWPORT"}, {frameId: 0});
+      const frameMessage = {...message, preferences: {...message.preferences, viewport: view?.viewport || null}};
+      const frame = await sendToKaggleNotebook(tab.id, frameMessage, true);
+      if (frame.status !== "ok") throw new Error(translate(language, "kaggleFrameWarning"));
+      result.started ||= frame.started;
+      result.found = (result.found || 0) + frame.found;
+      result.truncated ||= frame.truncated;
+    }
     try {
       if (chrome.action?.setBadgeText) await chrome.action.setBadgeText({tabId: tab.id, text: ""});
       if (chrome.action?.setTitle) await chrome.action.setTitle({tabId: tab.id, title: "ContextFlow Translate"});
@@ -80,7 +92,7 @@ chrome.commands?.onCommand?.addListener((command, tab) => {
       const message = String(error?.message || error);
       try {
         const language = await quickLocale();
-        const shown = await chrome.tabs.sendMessage(active.id, {type: "CF_QUICK_NOTICE", text: message, preferences: {messages: contentMessages(language)}});
+        const shown = await chrome.tabs.sendMessage(active.id, {type: "CF_QUICK_NOTICE", text: message, preferences: {messages: contentMessages(language)}}, {frameId: 0});
         if (!shown?.ok) throw new Error(message);
       } catch {
         if (active?.id && chrome.action?.setBadgeText) {
@@ -223,7 +235,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 15};
+      return {protocol: 16};
+    }
+    if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
+      if (!sender.tab || sender.frameId !== 0 || !isKaggleNotebook(sender.tab.url)) throw new Error("Invalid notebook viewport sender.");
+      const viewport = message.viewport;
+      if (!Number.isFinite(viewport?.top) || !Number.isFinite(viewport?.bottom) || viewport.top < 0 || viewport.bottom < viewport.top || viewport.bottom > 100000000) throw new Error("Invalid notebook viewport.");
+      return await sendToKaggleNotebook(sender.tab.id, {type: "CF_SET_VIEWPORT", viewport}, false);
     }
     if (message?.type === "CF_QUICK_START") {
       if (!sender.tab) throw new Error("Quick translation must originate from a webpage.");
