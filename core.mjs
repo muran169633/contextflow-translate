@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   glossary: "",
   review: false,
   cache: true,
+  dynamic: true,
   maxBlocks: 50
 });
 

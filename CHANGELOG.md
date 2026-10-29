@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added opt-out dynamic translation for newly visible, expanded or changed
+  content after starting page translation, with stop and quota notices.
+
 - Prioritized the visible part of the page for all providers and added bounded
   concurrent batches for Microsoft and Google Cloud Translation.
 - Added immediate feedback for quick translation and reduced accidental drag

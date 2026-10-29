@@ -48,6 +48,7 @@ function settingsFromForm() {
     glossary: $("glossary").value,
     review: $("review").checked,
     cache: $("cache").checked,
+    dynamic: $("dynamic").checked,
     maxBlocks: Math.max(1, Math.min(150, Number.isFinite(maxBlocks) ? maxBlocks : 50))
   };
 }
@@ -63,6 +64,7 @@ async function restore() {
   }
   $("review").checked = !!s.review;
   $("cache").checked = !!s.cache;
+  $("dynamic").checked = !!s.dynamic;
 }
 async function saveAndMaybeTest(test) {
   const save = $("save");
@@ -70,6 +72,11 @@ async function saveAndMaybeTest(test) {
   save.disabled = testButton.disabled = true;
   try {
     const data = settingsFromForm();
+    if (!test && !data.model) {
+      await chrome.storage.local.set({settings: data});
+      status(t("preferencesSaved"), "success");
+      return;
+    }
     const endpoint = providerBase(data);
     const pattern = modelPermission(data);
     if (test && !data.model) throw new Error(t("needTestModel"));

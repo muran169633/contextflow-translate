@@ -61,6 +61,7 @@ async function updateSettingsPreview() {
   googleKeyPresent = !!String(data.googleTranslateKey || "").trim();
   microsoftKeyPresent = !!String(data.microsoftKey || "").trim();
   youdaoKeysPresent = !!String(data.youdaoAppKey || "").trim() && !!String(data.youdaoAppSecret || "").trim();
+  $("dynamicInfo").textContent = t(data.dynamic ? "dynamicEnabled" : "dynamicDisabled");
   $("model").textContent = data.model || t("noModel");
   $("detail").textContent = `${data.target} / ${t(data.style)}${data.review ? ` / ${t("reviewOn")}` : ""}`;
 }
@@ -79,7 +80,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 12) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 13) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -136,11 +137,11 @@ async function runAction(kind) {
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 12) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 13) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;
-      const result = await communicate(kind, {engine: selectedEngine, target: config.target, maxBlocks: config.maxBlocks, messages: contentMessages(language)});
+      const result = await communicate(kind, {engine: selectedEngine, target: config.target, maxBlocks: config.maxBlocks, dynamic: config.dynamic, messages: contentMessages(language)});
       status(result.started
         ? t("started", {count: result.found}) + (result.truncated ? ` ${t("limitWarning", {limit: result.found})}` : "")
         : t(kind === "CF_CONTINUE" ? "noNewParagraphs" : "noParagraphs"), result.started && !result.truncated ? "success" : result.started ? "info" : "error");

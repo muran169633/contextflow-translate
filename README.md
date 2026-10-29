@@ -31,7 +31,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 - Optional second AI review, aimed at preserving negations, numbers, units and qualifiers.
 - Per-paragraph retry; stop translation; remove all overlays.
 - Optional 7-day local cache (up to 200 batched results).
-- On-demand `activeTab` access: no always-on webpage monitoring.
+- On-demand `activeTab` access: dynamic monitoring starts only after translation
+  is requested on the page, and stops on Stop or Remove translations.
 - Interface language selection: Simplified Chinese, English, Japanese,
   Spanish, German, or Korean. The selection is stored locally and is independent of the
   translation target language.
@@ -48,7 +49,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 5. Select **MyMemory · free** or **Google Translate · no key (unofficial)**, choose the source and target languages, and click **Translate page**. On first use, allow access to the selected service. The source language must be selected explicitly.
 6. Alternatively select **Your AI model** and open **Settings**. Choose an API type: **OpenAI-compatible** for any provider exposing `chat/completions`, **Google Gemini API**, or **Anthropic Claude API**. Enter the model ID and its provider's API key; for compatible services also enter the base URL. Save, then return to the page. **Save & test API** sends a short test and may incur a provider charge.
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
-8. After expanding replies or loading more content, click **Translate new or unfinished content**. Previously translated blocks are retained. The button sends newly found text to the selected provider and can use quota or incur charges.
+8. Dynamic translation is enabled by default: after starting, newly expanded or scrolled-into-view content is sent to the selected provider. It may consume quota or incur charges. Turn it off in Settings for manual translation, or use **Stop** / **Remove translations** to end monitoring on the current page. **Translate new or unfinished content** remains available.
 
 ### Quick translation
 
@@ -109,8 +110,9 @@ After updating the extension, reload it from the browser's extension management
 page and refresh the webpage before starting a new translation. Each run and
 its retries use the provider and language pair selected when the run started;
 after switching providers, click **Translate page** again to start a new run.
-The per-run paragraph limit is configurable in Settings; when reached, the
-extension warns that some content remains. Longer paragraphs are split into
+The paragraph limit per batch is configurable in Settings; when reached, the
+extension warns that some content remains. With dynamic translation enabled,
+subsequent scrolling or page changes can send further batches. Longer paragraphs are split into
 bounded requests and combined for display.
 
 Select **Interface language** in the popup or settings to change the UI.
@@ -192,7 +194,9 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 ## Known limitations
 
 - Ordinary article-like webpages only. Chrome/Edge internal pages, browser-owned PDF viewers, scanned images and embedded video subtitles are not supported.
-- Translates at most 150 content blocks per click (default 50); content is not continuously translated on scroll or SPA route changes.
+- Translates at most 150 content blocks per batch (default 50). When dynamic
+  translation is enabled, visible new or changed text is translated on scroll
+  or page changes until stopped; nonstandard site layouts may still be missed.
 - Complex page layouts can still render overlays imperfectly; text extraction may select unwanted items or miss nonstandard blocks.
 - Translation quality depends on the configured model, prompt, glossary and source text. **No benchmark has established superiority to any other extension**.
 - The second-pass review can help but cannot guarantee correctness and uses more tokens.

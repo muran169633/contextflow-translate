@@ -133,6 +133,34 @@ Object.assign(messages.es, {quickStarting:'Iniciando traducción…'});
 Object.assign(messages.de, {quickStarting:'Übersetzung wird gestartet…'});
 Object.assign(messages.ko, {quickStarting:'번역을 시작하는 중…'});
 
+Object.assign(messages['zh-CN'], {dynamicTitle:'自动翻译新出现的内容', dynamicHelp:'开始翻译后，展开回复或滚动时自动发送屏幕内新内容给所选服务，可能消耗额度或产生费用。点击停止或清除可结束，关闭此项则只按需翻译。', dynamicNotice:'开启自动翻译时，滚动或展开的新内容会发送给所选服务并可能消耗额度；可在设置中关闭。'});
+Object.assign(messages.en, {dynamicTitle:'Automatically translate new content', dynamicHelp:'After starting, newly visible or expanded content is sent to the selected provider and may use quota or incur charges. Stop or clear ends it; disable this option for manual translation only.', dynamicNotice:'When automatic translation is enabled, newly visible or expanded text is sent to the selected provider and can use quota. Disable it in Settings.'});
+Object.assign(messages.ja, {dynamicTitle:'新しい内容を自動翻訳', dynamicHelp:'翻訳開始後、表示または展開された内容を選択したサービスへ送信します。利用枠や料金が発生する場合があります。停止・削除で終了し、設定をオフにすると手動翻訳のみになります。', dynamicNotice:'自動翻訳が有効な場合、新しく表示された内容がサービスに送信され、利用枠を消費する場合があります。設定でオフにできます。'});
+Object.assign(messages.es, {dynamicTitle:'Traducir contenido nuevo automáticamente', dynamicHelp:'Tras iniciar, el contenido nuevo visible o desplegado se envía al servicio elegido y puede consumir cuota o generar cargos. Detener o borrar finaliza el proceso; desactiva la opción para traducir manualmente.', dynamicNotice:'Si la traducción automática está activada, el contenido nuevo visible se envía al servicio y puede consumir cuota. Puedes desactivarla en Configuración.'});
+Object.assign(messages.de, {dynamicTitle:'Neue Inhalte automatisch übersetzen', dynamicHelp:'Nach dem Start werden neu sichtbare oder aufgeklappte Inhalte an den gewählten Dienst gesendet und können Kontingent oder Kosten verursachen. Stoppen oder Löschen beendet dies; deaktiviere die Option für manuelle Übersetzung.', dynamicNotice:'Bei aktivierter automatischer Übersetzung werden neue sichtbare Inhalte an den Dienst gesendet und können Kontingent verbrauchen. In den Einstellungen abschaltbar.'});
+Object.assign(messages.ko, {dynamicTitle:'새 콘텐츠 자동 번역', dynamicHelp:'번역을 시작한 뒤 새로 표시하거나 펼친 내용이 선택한 서비스로 전송되어 할당량이나 요금이 발생할 수 있습니다. 중지 또는 삭제로 종료하며, 옵션을 끄면 수동으로만 번역합니다.', dynamicNotice:'자동 번역이 켜져 있으면 새로 표시된 내용이 선택한 서비스로 전송되어 할당량을 사용할 수 있습니다. 설정에서 끌 수 있습니다.'});
+
+Object.assign(messages['zh-CN'], {maxBlocks:'每批最多翻译段落数', maxHelp:'默认 50 段。自动翻译开启时，滚动或展开内容可能触发后续批次并消耗额度。'});
+Object.assign(messages.en, {maxBlocks:'Maximum paragraphs per batch', maxHelp:'Default: 50. Automatic translation can send additional batches as content appears and use quota.'});
+Object.assign(messages.ja, {maxBlocks:'1 回の処理の最大段落数', maxHelp:'初期値は 50 段落です。自動翻訳が有効な場合、追加処理が発生し利用枠を消費する場合があります。'});
+Object.assign(messages.es, {maxBlocks:'Máximo de párrafos por lote', maxHelp:'Por defecto: 50. La traducción automática puede enviar lotes adicionales y consumir cuota.'});
+Object.assign(messages.de, {maxBlocks:'Maximale Absätze pro Durchgang', maxHelp:'Standard: 50. Automatische Übersetzung kann weitere Durchgänge auslösen und Kontingent verbrauchen.'});
+Object.assign(messages.ko, {maxBlocks:'한 번에 번역할 최대 문단 수', maxHelp:'기본값은 50개입니다. 자동 번역은 추가 요청을 보내 할당량을 사용할 수 있습니다.'});
+
+Object.assign(messages['zh-CN'], {preferencesSaved:'设置已保存。返回网页后重新开始翻译使其生效。'});
+Object.assign(messages.en, {preferencesSaved:'Settings saved. Restart translation on the page to apply them.'});
+Object.assign(messages.ja, {preferencesSaved:'設定を保存しました。ページで翻訳を開始し直してください。'});
+Object.assign(messages.es, {preferencesSaved:'Configuración guardada. Reinicia la traducción en la página para aplicarla.'});
+Object.assign(messages.de, {preferencesSaved:'Einstellungen gespeichert. Starte die Übersetzung auf der Seite erneut.'});
+Object.assign(messages.ko, {preferencesSaved:'설정을 저장했습니다. 페이지에서 번역을 다시 시작하세요.'});
+
+Object.assign(messages['zh-CN'], {dynamicEnabled:'自动翻译已开启：滚动或展开的新内容会发送给所选服务，可能消耗额度或产生费用；可在设置中关闭。', dynamicDisabled:'自动翻译已关闭：新内容需手动翻译。'});
+Object.assign(messages.en, {dynamicEnabled:'Automatic translation is on: newly visible or expanded content is sent to the selected provider and may use quota or incur charges. Disable it in Settings.', dynamicDisabled:'Automatic translation is off: translate new content manually.'});
+Object.assign(messages.ja, {dynamicEnabled:'自動翻訳はオンです。新しく表示・展開された内容がサービスに送信され、利用枠や料金が発生する場合があります。設定でオフにできます。', dynamicDisabled:'自動翻訳はオフです。新しい内容は手動で翻訳してください。'});
+Object.assign(messages.es, {dynamicEnabled:'La traducción automática está activada: el contenido nuevo se envía al servicio y puede consumir cuota o generar cargos. Desactívala en Configuración.', dynamicDisabled:'La traducción automática está desactivada: traduce el contenido nuevo manualmente.'});
+Object.assign(messages.de, {dynamicEnabled:'Automatische Übersetzung ist aktiv: Neue sichtbare Inhalte werden an den Dienst gesendet und können Kontingent oder Kosten verursachen. In den Einstellungen abschaltbar.', dynamicDisabled:'Automatische Übersetzung ist aus: Neue Inhalte manuell übersetzen.'});
+Object.assign(messages.ko, {dynamicEnabled:'자동 번역이 켜져 있습니다. 새로 표시된 내용이 서비스로 전송되어 할당량이나 요금이 발생할 수 있습니다. 설정에서 끌 수 있습니다.', dynamicDisabled:'자동 번역이 꺼져 있습니다. 새 내용은 수동으로 번역하세요.'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);

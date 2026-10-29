@@ -5,7 +5,8 @@
   const ROOT_CLASS = "cf-translation";
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", truncated: false};
+  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", truncated: false, dynamic: false, dynamicDirty: false, maxBlocks: 50};
+  let observer, dynamicTimer;
   let quickControl, quickTranslateButton, quickCloseButton;
   let quickPosition = null;
   function uiText(key, values = {}) {
@@ -273,6 +274,76 @@
     };
   }
 
+  function stopDynamic() {
+    state.dynamic = false;
+    state.dynamicDirty = false;
+    observer?.disconnect();
+    observer = null;
+    if (dynamicTimer) clearTimeout(dynamicTimer);
+    dynamicTimer = null;
+    globalThis.removeEventListener?.("scroll", onDynamicChange, true);
+    globalThis.removeEventListener?.("resize", onDynamicChange);
+  }
+
+  function onDynamicChange() {
+    if (!state.dynamic || state.stop) return;
+    state.dynamicDirty = true;
+    if (state.running || dynamicTimer) return;
+    dynamicTimer = setTimeout(() => {
+      dynamicTimer = null;
+      if (!state.dynamic || state.stop || state.running) return;
+      state.dynamicDirty = false;
+      const previous = state.items.filter(item => item.element.isConnected);
+      const previousByElement = new Map(previous.map(item => [item.element, item]));
+      const unchanged = new Set(previous.filter(item => sourceText(item.element) === item.text).map(item => item.element));
+      const {items} = getParagraphs(state.maxBlocks, unchanged);
+      const entries = items.filter(item => item.visible);
+      if (!entries.length) return;
+      const replaced = new Set(entries.map(item => item.element));
+      for (const item of entries) previousByElement.get(item.element)?.translatedNode?.remove();
+      state.items = [...previous.filter(item => !replaced.has(item.element)), ...entries];
+      state.running = true;
+      state.done = 0;
+      state.failed = 0;
+      state.failureReason = "";
+      state.total = entries.length;
+      state.truncated = false;
+      if (entries.length === state.maxBlocks) state.dynamicDirty = true;
+      const token = state.token;
+      void processParagraphs(entries, token).catch(error => {
+        if (state.token === token) {
+          state.running = false;
+          stopDynamic();
+          showToast(uiText("progressError", {error: String(error.message || error)}), "warn");
+        }
+      });
+    }, 250);
+  }
+
+  function currentParagraph(item) {
+    if (!item.element.isConnected) return false;
+    if (sourceText(item.element) === item.text) return true;
+    if (state.dynamic) state.dynamicDirty = true;
+    return false;
+  }
+
+  function startDynamic() {
+    if (typeof MutationObserver !== "function") return;
+    state.dynamic = true;
+    observer = new MutationObserver(records => {
+      const isOwned = node => {
+        const element = node.nodeType === 1 ? node : node.parentElement;
+        return !!element?.closest?.("[data-contextflow-owned]");
+      };
+      if (records.some(record => !isOwned(record.target) &&
+        (record.type !== "childList" || [...record.addedNodes, ...record.removedNodes].some(node => !isOwned(node))))) onDynamicChange();
+    });
+    observer.observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true,
+      attributeFilter: ["class", "style", "hidden", "aria-expanded", "aria-hidden"]});
+    globalThis.addEventListener?.("scroll", onDynamicChange, {capture: true, passive: true});
+    globalThis.addEventListener?.("resize", onDynamicChange, {passive: true});
+  }
+
   async function retryParagraph(item, node) {
     if (!node?.isConnected) return;
     const body = node.querySelector(".cf-translation-body");
@@ -317,6 +388,7 @@
           const response = await translateGroup(group, getContext(items, first, first + 1), false, token);
           if (state.stop || state.token !== token || !response) return;
           for (const item of group) {
+            if (!currentParagraph(item)) continue;
             renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
             item.completed = true;
             state.done++;
@@ -324,6 +396,7 @@
         } catch (error) {
           if (state.stop || state.token !== token) return;
           for (const item of group) {
+            if (!currentParagraph(item)) continue;
             renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
             state.failed++;
           }
@@ -362,6 +435,7 @@
           if (state.stop || state.token !== token) break;
           if (!response) break;
           for (const item of group) {
+            if (!currentParagraph(item)) continue;
             renderTranslation(item, response.translations[item.id], {notice: response.reviewWarning || ""});
             item.completed = true;
             state.done++;
@@ -369,6 +443,7 @@
         } catch (error) {
           if (state.stop || state.token !== token) break;
           for (const item of group) {
+            if (!currentParagraph(item)) continue;
             renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
             state.failed++;
           }
@@ -382,21 +457,25 @@
     if (state.token !== token) return;
     state.running = false;
     if (state.stop) {
+      stopDynamic();
       showToast(uiText(state.failureReason ? "progressFailed" : "progressStopped", {done: state.done, failed: state.failed, error: state.failureReason}), "warn");
     } else {
       const limitNote = state.truncated ? ` ${uiText("limitWarning", {limit: state.total})}` : "";
       showToast(uiText("progressDone", {done: state.done, failed: state.failed}) + limitNote, state.failed || state.truncated ? "warn" : "done");
+      if (state.dynamicDirty) onDynamicChange();
     }
   }
 
   function startTranslation(preferences, continuing = false) {
+    stopDynamic();
     const previous = continuing ? state.items : [];
-    const completed = previous.filter(item => item.completed && item.element.isConnected);
+    const completed = previous.filter(item => item.completed && item.element.isConnected && sourceText(item.element) === item.text);
     const completedElements = new Set(completed.map(item => item.element));
     const previousByElement = new Map(previous.map(item => [item.element, item]));
     state.messages = preferences?.messages || {};
     state.engine = preferences?.engine ? {...preferences.engine} : null;
     state.target = preferences?.target || "";
+    state.maxBlocks = Math.max(1, Math.min(150, Number(preferences?.maxBlocks) || 50));
     state.token++;
     state.stop = false;
     state.done = 0;
@@ -404,11 +483,13 @@
     state.failureReason = "";
     state.running = true;
     if (!continuing) clearTranslations();
-    const {items: entries, truncated} = getParagraphs(preferences?.maxBlocks || 50, completedElements);
+    const {items: entries, truncated} = getParagraphs(state.maxBlocks, completedElements);
     for (const item of entries) item.translatedNode = previousByElement.get(item.element)?.translatedNode;
     state.truncated = truncated;
     state.total = entries.length;
     state.items = continuing ? [...completed, ...entries] : entries;
+    if (preferences?.dynamic === true) startDynamic();
+    if (state.dynamic && truncated && entries.length && entries.every(item => item.visible)) state.dynamicDirty = true;
     if (!entries.length) {
       state.running = false;
       showToast(uiText(continuing ? "noNewParagraphs" : "noParagraphs"), "warn");
@@ -418,6 +499,7 @@
     void processParagraphs(entries, token).catch(error => {
       if (state.token === token) {
         state.running = false;
+        stopDynamic();
         showToast(uiText("progressError", {error: String(error.message || error)}), "warn");
       }
     });
@@ -426,7 +508,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 12, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 13, running: state.running, count: state.total});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});
@@ -439,10 +521,13 @@
     } else if (message?.type === "CF_CONTINUE") {
       sendResponse({ok: true, ...startTranslation(message.preferences, true)});
     } else if (message?.type === "CF_STOP") {
+      const wasDynamic = state.dynamic;
+      stopDynamic();
       state.stop = true;
-      if (state.running) showToast(uiText("progressStopped", {done: state.done, failed: state.failed}), "warn");
+      if (state.running || wasDynamic) showToast(uiText("progressStopped", {done: state.done, failed: state.failed}), "warn");
       sendResponse({ok: true, stopped: true});
     } else if (message?.type === "CF_CLEAR") {
+      stopDynamic();
       state.stop = true;
       state.token++;
       state.running = false;

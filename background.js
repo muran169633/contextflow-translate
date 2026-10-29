@@ -29,12 +29,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}); } catch {}
-  if (ping?.ok && ping.protocol !== 12) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 13) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"});
-    if (!ping?.ok || ping.protocol !== 12) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 13) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}});
   return ping;
@@ -58,7 +58,7 @@ async function quickTranslate(tab) {
     if (engine.provider === "microsoft" && !String(settings.microsoftKey || "").trim()) throw new Error(translate(language, "microsoftNeedKey"));
     const origin = engine.provider === "microsoft" ? MICROSOFT_ORIGIN : engine.provider === "youdao" ? YOUDAO_ORIGIN : engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
     if (!await chrome.permissions.contains({origins: [origin]})) throw new Error(translate(language, "quickAuthorize"));
-    const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_START", preferences: {engine, target: settings.target, maxBlocks: settings.maxBlocks, messages: contentMessages(language)}});
+    const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_START", preferences: {engine, target: settings.target, maxBlocks: settings.maxBlocks, dynamic: settings.dynamic, messages: contentMessages(language)}});
     if (!result?.ok) throw new Error(translate(language, "quickError"));
     try {
       if (chrome.action?.setBadgeText) await chrome.action.setBadgeText({tabId: tab.id, text: ""});
@@ -223,7 +223,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 12};
+      return {protocol: 13};
     }
     if (message?.type === "CF_QUICK_START") {
       if (!sender.tab) throw new Error("Quick translation must originate from a webpage.");
