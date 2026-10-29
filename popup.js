@@ -79,7 +79,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 10) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 11) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -120,20 +120,23 @@ async function runAction(kind) {
     if (selectedEngine.provider === "microsoft" && !microsoftKeyPresent) { status(t("microsoftNeedKey"), "error"); return; }
     // Called synchronously from the click handler to preserve the user gesture.
     const origin = selectedEngine.provider === "microsoft" ? MICROSOFT_ORIGIN : selectedEngine.provider === "youdao" ? YOUDAO_ORIGIN : selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : selectedEngine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
-    permission = chrome.permissions.request({origins: [origin]});
+    status(t("starting"), "info");
+    try { permission = chrome.permissions.request({origins: [origin]}); }
+    catch (error) { status(String(error?.message || error), "error"); return; }
   }
   busy = true;
   for (const button of document.querySelectorAll("button")) button.disabled = true;
   for (const id of ["provider", "freeSource", "freeTarget"]) $(id).disabled = true;
   try {
     if (["CF_START", "CF_CONTINUE"].includes(kind)) {
+      if (!permission) status(t("starting"), "info");
       const config = await settings();
       if (selectedEngine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
       if (permission && !await permission) throw new Error(t(selectedEngine.provider === "mymemory" ? "permissionFree" : selectedEngine.provider === "youdao" ? "permissionYoudao" : selectedEngine.provider === "microsoft" ? "permissionMicrosoft" : "permissionGoogle"));
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 10) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 11) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added immediate feedback for quick translation and reduced accidental drag
+  detection during ordinary clicks.
+
 - Added Microsoft Azure Translator with resource-key authentication and F0
   free-tier and pricing information.
 

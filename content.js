@@ -167,7 +167,7 @@
     });
     translate.addEventListener("pointermove", event => {
       if (!pointer || event.pointerId !== pointer.id) return;
-      if (!pointer.moved && Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) < 5) return;
+      if (!pointer.moved && Math.hypot(event.clientX - pointer.x, event.clientY - pointer.y) < 10) return;
       pointer.moved = true;
       moveQuickControl(pointer.left + event.clientX - pointer.x, pointer.top + event.clientY - pointer.y);
       event.preventDefault();
@@ -204,6 +204,7 @@
       // Page scripts can see the button but cannot initiate a translation on the user's behalf.
       if (!event.isTrusted || translate.disabled) return;
       translate.disabled = true;
+      showToast(uiText("quickStarting"));
       try {
         const result = await chrome.runtime.sendMessage({type: "CF_QUICK_START"});
         if (!result?.ok) showToast(result?.error || uiText("quickError"), "warn");
@@ -397,7 +398,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 10, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 11, running: state.running, count: state.total});
     } else if (message?.type === "CF_QUICK_SHOW") {
       showQuickControl(message.preferences?.messages);
       sendResponse({ok: true});

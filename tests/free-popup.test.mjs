@@ -10,15 +10,16 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
   const saved = {};
   let requested;
   let started;
-  let pingVersion = 10;
-  let backgroundVersion = 10;
+  let pingVersion = 11;
+  let backgroundVersion = 11;
   let starts = 0;
   let quickShown = false;
+  let permissionFailure = false;
   globalThis.document = {documentElement: {}, createElement: () => ({}), getElementById: id => nodes.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
   Object.defineProperty(globalThis, 'navigator', {configurable: true, value: {language: 'zh-CN'}});
   globalThis.chrome = {
     storage: {local: {get: async key => ({[key]: saved[key]}), set: async data => Object.assign(saved, data)}},
-    permissions: {request: ({origins}) => { requested = origins; return Promise.resolve(true); }},
+    permissions: {request: ({origins}) => { if (permissionFailure) throw new Error('权限请求失败'); requested = origins; return Promise.resolve(true); }},
     tabs: {query: async () => [{id: 1, url: 'https://example.com/article'}], sendMessage: async (_id, message) => {
       if (message.type === 'CF_PING') return {ok: true, protocol: pingVersion};
       if (message.type === 'CF_QUICK_SHOW') { quickShown = true; return {ok: true}; }
@@ -34,6 +35,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     assert.equal(quickShown, true);
     nodes.get('start').handler();
     assert.deepEqual(requested, ['https://api.mymemory.translated.net/*']);
+    assert.match(nodes.get('message').textContent, /正在启动/);
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(saved.translationEngine.provider, 'mymemory');
     assert.equal(saved.translationEngine.source, 'en');
@@ -50,12 +52,15 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /刷新网页/);
-    pingVersion = 10;
+    pingVersion = 11;
     backgroundVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /重新加载扩展/);
+    permissionFailure = true;
+    nodes.get('start').handler();
+    assert.match(nodes.get('message').textContent, /权限请求失败/);
   } finally {
     delete globalThis.document;
     delete globalThis.navigator;

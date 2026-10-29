@@ -9,12 +9,13 @@ test('悬浮按钮只在点击时请求翻译，可以关闭并显示错误', as
   const appended = [];
   let listener;
   let sent = 0;
+  let finishRequest;
   function element() {
     return {dataset: {}, children: [], isConnected: true, attributes: {}, setAttribute(key, value) { this.attributes[key] = value; },
       append(...nodes) { this.children.push(...nodes); }, remove() { this.isConnected = false; }, addEventListener(_type, fn) { this.handler = fn; }};
   }
-  const document = {body: {appendChild(node) { appended.push(node); }}, getElementById: () => null, createElement: element};
-  const chrome = {runtime: {onMessage: {addListener: fn => { listener = fn; }}, sendMessage: async message => { sent++; assert.equal(message.type, 'CF_QUICK_START'); return {ok: false, error: '授权失败'}; }}};
+  const document = {body: {appendChild(node) { appended.push(node); }}, getElementById: id => appended.find(node => node.id === id) || null, createElement: element};
+  const chrome = {runtime: {onMessage: {addListener: fn => { listener = fn; }}, sendMessage: message => { sent++; assert.equal(message.type, 'CF_QUICK_START'); return new Promise(resolve => { finishRequest = resolve; }); }}};
   vm.runInNewContext(script, {document, chrome});
   let response;
   listener({type: 'CF_QUICK_SHOW', preferences: {messages: contentMessages('zh-CN')}}, {}, result => { response = result; });
@@ -26,8 +27,11 @@ test('悬浮按钮只在点击时请求翻译，可以关闭并显示错误', as
   assert.equal(appended.length, 1);
   await control.children[0].handler({isTrusted: false});
   assert.equal(sent, 0);
-  await control.children[0].handler({isTrusted: true});
+  const pending = control.children[0].handler({isTrusted: true});
   assert.equal(sent, 1);
+  assert.equal(appended[1].textContent, '正在启动翻译…');
+  finishRequest({ok: false, error: '授权失败'});
+  await pending;
   assert.equal(appended[1].textContent, '授权失败');
   control.children[1].handler();
   assert.equal(control.isConnected, false);
@@ -82,8 +86,8 @@ test('拖动及键盘移动悬浮按钮，限制在视口并避免误触翻译',
   assert.equal(control.properties.left, '0px');
   assert.equal(control.properties.top, '0px');
   drag.listeners.pointerdown(event(20, 20));
-  drag.listeners.pointermove(event(22, 22));
-  drag.listeners.pointerup(event(22, 22, {type:'pointerup'}));
-  await drag.listeners.click(event(22, 22, {isTrusted:true, detail:1}));
+  drag.listeners.pointermove(event(26, 26));
+  drag.listeners.pointerup(event(26, 26, {type:'pointerup'}));
+  await drag.listeners.click(event(26, 26, {isTrusted:true, detail:1}));
   assert.equal(sent, 1);
 });

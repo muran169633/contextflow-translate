@@ -14,7 +14,7 @@ test("复制按钮读取当前标签并写入剪贴板", async () => {
   globalThis.chrome = {
     storage: {local: {get: async () => ({})}},
     tabs: {query: async () => [{id: 7, url: "https://www.kaggle.com/discussion/123"}], sendMessage: async (_id, message) => {
-      if (message.type === 'CF_PING') return {ok: true, protocol: 10};
+      if (message.type === 'CF_PING') return {ok: true, protocol: 11};
       if (message.type === 'CF_QUICK_SHOW') return {ok: true};
       assert.equal(message.type, "CF_COPY_DISCUSSION");
       return {ok: true, topic: {firstMessage: {author: {displayName: "甲"}, rawMarkdown: "主题"}, comments: [{author: {displayName: "乙"}, rawMarkdown: "回复"}]}};

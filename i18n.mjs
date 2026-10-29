@@ -126,6 +126,13 @@ Object.assign(messages.es, {microsoftProvider:'Microsoft Translator · Azure', m
 Object.assign(messages.de, {microsoftProvider:'Microsoft Translator · Azure', microsoftNote:'Azure-Translator-Schlüssel erforderlich. F0 hat ein monatliches Freikontingent; andere Tarife können kostenpflichtig sein.', microsoftPrivacy:'Ausgewählter Text wird an Microsoft gesendet. Speichere Schlüssel und Region in den Einstellungen.', microsoftPricing:'Microsoft-Translator-Preise', microsoftKey:'Azure-Translator-Schlüssel', microsoftRegion:'Azure-Ressourcenregion', microsoftKeyHelp:'Erstelle eine Translator-Ressource in Azure und ermittle Schlüssel und Region. Die Region ist bei globalen Einzeldienst-Ressourcen optional, bei regionalen oder Mehrdienst-Ressourcen erforderlich. Der Schlüssel wird lokal ohne zusätzliche Verschlüsselung gespeichert.', saveMicrosoftKey:'Microsoft-Zugangsdaten speichern', microsoftKeySaved:'Zugangsdaten gespeichert. Wähle Microsoft Translator im Popup.', microsoftNeedKey:'Speichere zuerst einen Azure-Translator-Schlüssel in den Einstellungen.', permissionMicrosoft:'Erlaube vor der Übersetzung den Zugriff auf Microsoft Translator.'});
 Object.assign(messages.ko, {microsoftProvider:'Microsoft 번역 · Azure', microsoftNote:'Azure Translator 키가 필요합니다. F0에는 월별 무료 할당량이 있으며 다른 요금제는 유료일 수 있습니다.', microsoftPrivacy:'선택한 텍스트가 Microsoft로 전송됩니다. 설정에서 키와 리소스 지역을 저장하세요.', microsoftPricing:'Microsoft Translator 요금', microsoftKey:'Azure Translator 키', microsoftRegion:'Azure 리소스 지역', microsoftKeyHelp:'Azure에서 Translator 리소스를 만들고 키와 지역을 확인하세요. 글로벌 단일 서비스는 지역이 선택 사항이며 지역별 또는 다중 서비스 리소스는 필수입니다. 키는 별도 암호화 없이 로컬에 저장됩니다.', saveMicrosoftKey:'Microsoft 인증 정보 저장', microsoftKeySaved:'Microsoft 인증 정보를 저장했습니다. 팝업에서 Microsoft 번역을 선택하세요.', microsoftNeedKey:'먼저 설정에서 Azure Translator 키를 저장하세요.', permissionMicrosoft:'번역 전에 Microsoft Translator 접근을 허용하세요.'});
 
+Object.assign(messages['zh-CN'], {quickStarting:'正在启动翻译…'});
+Object.assign(messages.en, {quickStarting:'Starting translation…'});
+Object.assign(messages.ja, {quickStarting:'翻訳を開始しています…'});
+Object.assign(messages.es, {quickStarting:'Iniciando traducción…'});
+Object.assign(messages.de, {quickStarting:'Übersetzung wird gestartet…'});
+Object.assign(messages.ko, {quickStarting:'번역을 시작하는 중…'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);
@@ -149,7 +156,7 @@ export function applyTranslations(root, language) {
   for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = translate(language, node.dataset.i18nPlaceholder);
 }
 export function contentMessages(language) {
-  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressParallel', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickMove', 'quickError'];
+  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressParallel', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs', 'noNewParagraphs', 'limitWarning', 'quickTranslate', 'quickTranslateTitle', 'quickClose', 'quickMove', 'quickStarting', 'quickError'];
   return Object.fromEntries(keys.map(key => [key, translate(language, key)]));
 }
 
