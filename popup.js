@@ -1,4 +1,5 @@
 import {DEFAULT_SETTINGS} from "./core.mjs";
+import {formatDiscussion} from "./discussion-core.mjs";
 const $ = id => document.getElementById(id);
 let busy = false;
 
@@ -39,6 +40,27 @@ async function communicate(type, preferences) {
   return await chrome.tabs.sendMessage(tab.id, {type, preferences});
 }
 
+async function copyDiscussion() {
+  if (busy) return;
+  busy = true;
+  for (const button of document.querySelectorAll("button")) button.disabled = true;
+  try {
+    status("正在读取讨论及回复……");
+    const tab = await currentTab();
+    await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["discussion.js"]});
+    const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_COPY_DISCUSSION"});
+    if (!result?.ok) throw new Error(result?.error || "无法读取讨论。");
+    const formatted = formatDiscussion(result.topic);
+    await navigator.clipboard.writeText(formatted.text);
+    status(`已复制 ${formatted.count} 条内容。${result.warning || ""}`, result.warning ? "info" : "success");
+  } catch (error) {
+    status(String(error?.message || error), "error");
+  } finally {
+    busy = false;
+    for (const button of document.querySelectorAll("button")) button.disabled = false;
+  }
+}
+
 async function runAction(kind) {
   if (busy) return;
   busy = true;
@@ -70,5 +92,6 @@ async function runAction(kind) {
 $("start").addEventListener("click", () => runAction("CF_START"));
 $("stop").addEventListener("click", () => runAction("CF_STOP"));
 $("clear").addEventListener("click", () => runAction("CF_CLEAR"));
+$("copy-discussion").addEventListener("click", () => void copyDiscussion());
 $("settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
 void updateSettingsPreview().catch(error => status(String(error?.message || error), "error"));

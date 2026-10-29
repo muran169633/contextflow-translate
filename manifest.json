@@ -5,7 +5,7 @@
   "description": "Context-aware bilingual webpage translation with your own AI provider and glossary.",
   "version": "0.1.0",
   "minimum_chrome_version": "114",
-  "permissions": ["activeTab", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "clipboardWrite"],
   "optional_host_permissions": [
     "https://*/*",
     "http://localhost/*",

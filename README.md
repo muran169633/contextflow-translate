@@ -15,6 +15,9 @@ A small, original Chrome / Edge Manifest V3 bilingual webpage translation extens
 - Per-paragraph retry; stop translation; remove all overlays.
 - Optional 7-day local cache (up to 200 batched results).
 - On-demand `activeTab` access: no always-on webpage monitoring.
+- Copy Kaggle discussions, including replies returned in collapsed threads,
+  with author and direct-reply labels; structured comments on other sites are
+  supported when available.
 
 ## Quick start (Chrome / Edge)
 
@@ -26,6 +29,18 @@ A small, original Chrome / Edge Manifest V3 bilingual webpage translation extens
 6. Click **Save & test API**; Chrome will ask for permission to contact only the configured API host. The test translates a short sentence and may incur a tiny provider charge.
 7. Open any ordinary `https://` article, click the extension icon and choose **Translate page**. Look for translations underneath the original paragraphs and a status indicator in the bottom-right corner.
 8. Use **Stop** to halt future batches, **Remove** to clear overlays, or **Retry** to retranslate an individual paragraph without cache.
+
+### 复制讨论
+
+打开 Kaggle 具体讨论页面，点击扩展中的 **Copy discussion / 复制讨论**，
+然后粘贴。输出按 `作者：` 和 `回复者 回复 作者：` 分段，保留原文的
+Markdown、链接和代码。无需配置 AI 模型；此操作只读取当前网站的数据并
+写入剪贴板，不向 AI 服务发送内容。
+
+Kaggle 通过当前页面的登录状态读取讨论数据，包含接口返回的折叠回复；
+若接口返回数量不足会提示。网页上由翻译工具插入的译文不包含在 Kaggle
+接口原文中。其他网站仅支持页面内已有的 JSON-LD 结构化评论，未加载的
+回复可能缺失；不支持的网站会提示，而不会声称复制完整。
 
 ### Personal API gateway examples
 
@@ -89,6 +104,8 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 
 ```text
 popup.html/js            Click-to-translate and remove overlays
+discussion.js            Read Kaggle or structured discussion data
+discussion-core.mjs      Format authors and nested replies for the clipboard
 options.html/js          Provider and translation-quality settings
 content.js/css           Extract source paragraphs and render bilingual text
 background.js            Host-permission-checked API requests and cache

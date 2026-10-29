@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Added contribution guidance and documented the project maintainer.
+- Added copying of Kaggle discussions, including returned collapsed replies,
+  and a limited fallback for structured comments on other sites.
 
 ## 0.1.0 — initial source import
 
