@@ -40,6 +40,22 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
 8. After expanding replies or loading more content, click **Translate new or unfinished content**. Previously translated blocks are retained. The button sends newly found text to the selected provider and can use quota or incur charges.
 
+### Quick translation
+
+Opening ContextFlow on an ordinary webpage displays a **Translate** button in
+the lower-left corner. Click it to translate using the saved service and
+language pair; use **×** to hide it. Opening the extension again restores the
+button for the current page. The button does not translate until clicked.
+
+The default shortcut is **Ctrl+Shift+Y** (macOS: **Command+Shift+Y**) and can
+also start translation directly on the active page. Change it in
+`chrome://extensions/shortcuts` or the equivalent Edge extension shortcuts
+page if it conflicts with another shortcut. First configure the provider and
+use the popup's **Translate page** once to grant provider access; a shortcut
+cannot silently grant that permission. The page button appears only after
+opening the extension or using the shortcut on that page; it does not add
+permanent access to all sites.
+
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
 
 To use Google Cloud Translation, create a Google Cloud project with the

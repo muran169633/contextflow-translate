@@ -77,3 +77,38 @@
   .cf-translation-toolbar button:hover {background: #343f60 !important;}
   .cf-translation.cf-error {background: #442d2d !important; color: #ffdad4 !important;}
 }
+
+.cf-quick-control {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  left: 16px !important;
+  bottom: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  padding: 3px !important;
+  border-radius: 12px !important;
+  background: #263d92 !important;
+  box-shadow: 0 5px 18px rgba(20, 29, 66, .28) !important;
+  font-family: system-ui, sans-serif !important;
+}
+.cf-quick-control button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  height: 34px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  font: 600 13px/1 system-ui, sans-serif !important;
+  text-transform: none !important;
+}
+.cf-quick-control .cf-quick-translate {padding: 0 10px !important;}
+.cf-quick-control .cf-quick-close {width: 29px !important; padding: 0 !important; font-size: 18px !important; opacity: .8 !important;}
+.cf-quick-control button:hover, .cf-quick-control button:focus-visible {background: rgba(255,255,255,.18) !important; outline: 2px solid #fff !important; outline-offset: -2px !important;}
+.cf-quick-control button:disabled {opacity: .55 !important; cursor: wait !important;}

@@ -6,6 +6,7 @@
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
   const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", truncated: false};
+  let quickControl, quickTranslateButton, quickCloseButton;
   function uiText(key, values = {}) {
     const template = state.messages[key] || key;
     return template.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? String(values[name]) : match);
@@ -111,6 +112,51 @@
     }
     toast.dataset.kind = kind;
     toast.textContent = message;
+  }
+
+  function showQuickControl(messages) {
+    state.messages = {...state.messages, ...(messages || {})};
+    if (quickControl?.isConnected) {
+      quickTranslateButton.textContent = uiText("quickTranslate");
+      quickTranslateButton.title = uiText("quickTranslateTitle");
+      quickTranslateButton.setAttribute("aria-label", uiText("quickTranslateTitle"));
+      quickCloseButton.title = uiText("quickClose");
+      quickCloseButton.setAttribute("aria-label", uiText("quickClose"));
+      return;
+    }
+    quickControl = document.createElement("div");
+    quickControl.className = "cf-quick-control";
+    quickControl.setAttribute("data-contextflow-owned", "true");
+    const translate = document.createElement("button");
+    translate.type = "button";
+    translate.className = "cf-quick-translate";
+    translate.textContent = uiText("quickTranslate");
+    translate.title = uiText("quickTranslateTitle");
+    translate.setAttribute("aria-label", uiText("quickTranslateTitle"));
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "cf-quick-close";
+    close.textContent = "×";
+    close.title = uiText("quickClose");
+    close.setAttribute("aria-label", uiText("quickClose"));
+    quickTranslateButton = translate;
+    quickCloseButton = close;
+    close.addEventListener("click", () => quickControl.remove());
+    translate.addEventListener("click", async event => {
+      // Page scripts can see the button but cannot initiate a translation on the user's behalf.
+      if (!event.isTrusted || translate.disabled) return;
+      translate.disabled = true;
+      try {
+        const result = await chrome.runtime.sendMessage({type: "CF_QUICK_START"});
+        if (!result?.ok) showToast(result?.error || uiText("quickError"), "warn");
+      } catch (error) {
+        showToast(String(error?.message || error), "warn");
+      } finally {
+        translate.disabled = false;
+      }
+    });
+    quickControl.append(translate, close);
+    document.body.appendChild(quickControl);
   }
 
   function clearTranslations() {
@@ -262,7 +308,14 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 4, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 5, running: state.running, count: state.total});
+    } else if (message?.type === "CF_QUICK_SHOW") {
+      showQuickControl(message.preferences?.messages);
+      sendResponse({ok: true});
+    } else if (message?.type === "CF_QUICK_NOTICE") {
+      state.messages = {...state.messages, ...(message.preferences?.messages || {})};
+      showToast(String(message.text || ""), "warn");
+      sendResponse({ok: true});
     } else if (message?.type === "CF_START") {
       sendResponse({ok: true, ...startTranslation(message.preferences)});
     } else if (message?.type === "CF_CONTINUE") {

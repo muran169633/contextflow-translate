@@ -16,11 +16,12 @@ test('选择 Google 服务后请求其域名权限，密钥不传给网页', asy
     storage: {local: {get: async key => ({[key]: saved[key]}), set: async value => Object.assign(saved, value)}},
     permissions: {request: ({origins}) => { origin = origins[0]; return Promise.resolve(true); }},
     tabs: {query: async () => [{id: 1, url: 'https://example.com/article'}], sendMessage: async (_id, message) => {
-      if (message.type === 'CF_PING') return {ok: true, protocol: 4};
+      if (message.type === 'CF_PING') return {ok: true, protocol: 5};
+      if (message.type === 'CF_QUICK_SHOW') return {ok: true};
       started = message;
       return {started: true, found: 1};
     }},
-    scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 4})}
+    scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 5})}
   };
   try {
     await import('../popup.js');

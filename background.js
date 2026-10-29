@@ -6,6 +6,7 @@ import {
 import {FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, translateFree} from "./free-translate.mjs";
 import {GOOGLE_TRANSLATE_ORIGIN, translateGoogle} from "./google-translate.mjs";
 import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
+import {contentMessages, resolveLanguage, translate} from "./i18n.mjs";
 
 // Keep API credentials away from content scripts. Options/popup/service worker remain trusted.
 chrome.storage.local.setAccessLevel({accessLevel: "TRUSTED_CONTEXTS"}).catch(() => {});
@@ -14,6 +15,77 @@ async function readSettings() {
   const data = await chrome.storage.local.get("settings");
   return {...DEFAULT_SETTINGS, ...(data.settings || {})};
 }
+
+const quickPending = new Set();
+
+async function quickLocale() {
+  const {uiLanguage} = await chrome.storage.local.get("uiLanguage");
+  return resolveLanguage(uiLanguage || chrome.i18n?.getUILanguage?.() || "en");
+}
+
+async function ensureQuickPage(tabId, language) {
+  let ping;
+  try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}); } catch {}
+  if (ping?.ok && ping.protocol !== 5) throw new Error(translate(language, "refreshPage"));
+  if (!ping?.ok) {
+    await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
+    await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
+    ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"});
+    if (!ping?.ok || ping.protocol !== 5) throw new Error(translate(language, "refreshPage"));
+  }
+  await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}});
+  return ping;
+}
+
+async function quickTranslate(tab) {
+  if (!Number.isInteger(tab?.id) || (tab.url && !/^https?:\/\//.test(tab.url))) throw new Error("Open an ordinary HTTP or HTTPS page.");
+  const language = await quickLocale();
+  if (quickPending.has(tab.id)) throw new Error(translate(language, "quickRunning"));
+  quickPending.add(tab.id);
+  try {
+    const ping = await ensureQuickPage(tab.id, language);
+    if (ping.running) throw new Error(translate(language, "quickRunning"));
+    const settings = await readSettings();
+    const stored = await chrome.storage.local.get("translationEngine");
+    const engine = normalizeEngine(stored.translationEngine, !!String(settings.model || "").trim());
+    if (engine.provider !== "ai" && engine.source === engine.target) throw new Error(translate(language, "sameLanguage"));
+    if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error(translate(language, "needModel"));
+    if (engine.provider === "google" && !String(settings.googleTranslateKey || "").trim()) throw new Error(translate(language, "googleNeedKey"));
+    const origin = engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
+    if (!await chrome.permissions.contains({origins: [origin]})) throw new Error(translate(language, "quickAuthorize"));
+    const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_START", preferences: {engine, target: settings.target, maxBlocks: settings.maxBlocks, messages: contentMessages(language)}});
+    if (!result?.ok) throw new Error(translate(language, "quickError"));
+    try {
+      if (chrome.action?.setBadgeText) await chrome.action.setBadgeText({tabId: tab.id, text: ""});
+      if (chrome.action?.setTitle) await chrome.action.setTitle({tabId: tab.id, title: "ContextFlow Translate"});
+    } catch {}
+    return result;
+  } finally {
+    quickPending.delete(tab.id);
+  }
+}
+
+chrome.commands?.onCommand?.addListener((command, tab) => {
+  if (command !== "quick-translate") return;
+  void (async () => {
+    const active = tab?.id ? tab : (await chrome.tabs.query({active: true, currentWindow: true}))[0];
+    try {
+      await quickTranslate(active);
+    } catch (error) {
+      const message = String(error?.message || error);
+      try {
+        const language = await quickLocale();
+        const shown = await chrome.tabs.sendMessage(active.id, {type: "CF_QUICK_NOTICE", text: message, preferences: {messages: contentMessages(language)}});
+        if (!shown?.ok) throw new Error(message);
+      } catch {
+        if (active?.id && chrome.action?.setBadgeText) {
+          await chrome.action.setBadgeText({tabId: active.id, text: "!"});
+          await chrome.action.setTitle({tabId: active.id, title: message});
+        }
+      }
+    }
+  })();
+});
 
 function safeContext(context) {
   return {
@@ -137,7 +209,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 4};
+      return {protocol: 5};
+    }
+    if (message?.type === "CF_QUICK_START") {
+      if (!sender.tab) throw new Error("Quick translation must originate from a webpage.");
+      return await quickTranslate(sender.tab);
     }
     if (message?.type === "CF_TRANSLATE") {
       if (!sender.tab) throw new Error("Translation requests must originate from an active webpage.");

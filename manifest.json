@@ -15,6 +15,12 @@
     "default_title": "ContextFlow Translate",
     "default_popup": "popup.html"
   },
+  "commands": {
+    "quick-translate": {
+      "suggested_key": {"default": "Ctrl+Shift+Y", "mac": "Command+Shift+Y"},
+      "description": "Quickly translate the current page"
+    }
+  },
   "background": {
     "service_worker": "background.js",
     "type": "module"

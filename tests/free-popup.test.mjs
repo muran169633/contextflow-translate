@@ -10,9 +10,10 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
   const saved = {};
   let requested;
   let started;
-  let pingVersion = 4;
-  let backgroundVersion = 4;
+  let pingVersion = 5;
+  let backgroundVersion = 5;
   let starts = 0;
+  let quickShown = false;
   globalThis.document = {documentElement: {}, createElement: () => ({}), getElementById: id => nodes.get(id), querySelectorAll: selector => selector === 'button' ? buttons : []};
   Object.defineProperty(globalThis, 'navigator', {configurable: true, value: {language: 'zh-CN'}});
   globalThis.chrome = {
@@ -20,6 +21,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     permissions: {request: ({origins}) => { requested = origins; return Promise.resolve(true); }},
     tabs: {query: async () => [{id: 1, url: 'https://example.com/article'}], sendMessage: async (_id, message) => {
       if (message.type === 'CF_PING') return {ok: true, protocol: pingVersion};
+      if (message.type === 'CF_QUICK_SHOW') { quickShown = true; return {ok: true}; }
       if (message.type === 'CF_START' || message.type === 'CF_CONTINUE') { started = message; starts++; return {started: true, found: 1}; }
       throw new Error('unexpected message');
     }},
@@ -29,6 +31,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     await import('../popup.js');
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(nodes.get('provider').value, 'mymemory');
+    assert.equal(quickShown, true);
     nodes.get('start').handler();
     assert.deepEqual(requested, ['https://api.mymemory.translated.net/*']);
     await new Promise(resolve => setImmediate(resolve));
@@ -47,7 +50,7 @@ test('免费模式通过弹窗请求权限并启动翻译，无需模型', async
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(starts, 2);
     assert.match(nodes.get('message').textContent, /刷新网页/);
-    pingVersion = 4;
+    pingVersion = 5;
     backgroundVersion = 1;
     nodes.get('start').handler();
     await new Promise(resolve => setImmediate(resolve));

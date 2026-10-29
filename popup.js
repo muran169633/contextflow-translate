@@ -9,6 +9,8 @@ let busy = false;
 let language = "en";
 let engine = {...DEFAULT_ENGINE};
 let saveQueue = Promise.resolve();
+let quickSetup = Promise.resolve();
+let quickReady = false;
 let googleKeyPresent = false;
 const t = (key, values) => translate(language, key, values);
 
@@ -67,7 +69,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 4) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 5) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -118,9 +120,10 @@ async function runAction(kind) {
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 4) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 5) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
+      await quickSetup;
       const result = await communicate(kind, {engine: selectedEngine, target: config.target, maxBlocks: config.maxBlocks, messages: contentMessages(language)});
       status(result.started
         ? t("started", {count: result.found}) + (result.truncated ? ` ${t("limitWarning", {limit: result.found})}` : "")
@@ -163,6 +166,10 @@ void (async () => {
     language = next;
     renderEngine();
     void updateSettingsPreview().catch(error => status(String(error?.message || error), "error"));
+    if (quickReady) quickSetup = quickSetup.then(() => communicate("CF_QUICK_SHOW", {messages: contentMessages(language)})).catch(() => {});
   });
+  // Opening the extension grants activeTab access for this page only.
+  quickSetup = communicate("CF_QUICK_SHOW", {messages: contentMessages(language)}).catch(() => {});
+  quickReady = true;
   for (const id of ["provider", "freeSource", "freeTarget", "start", "continue"]) $(id).disabled = false;
 })().catch(error => status(String(error?.message || error), "error"));

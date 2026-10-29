@@ -20,6 +20,8 @@
 - Improved coverage of short comments, long paragraphs and pages with multiple
   article regions; added an explicit action for new or unfinished content and
   a warning when the configured paragraph limit leaves content untranslated.
+- Added an on-page quick translation button and configurable keyboard shortcut
+  using the existing provider settings and permissions.
 
 ## 0.1.0 — initial source import
 
