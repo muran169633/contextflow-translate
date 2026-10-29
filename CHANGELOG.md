@@ -13,6 +13,8 @@
   settings; existing OpenAI-compatible configurations remain supported.
 - Fixed service selection for page translations and retries, and added prompts
   when an older page script or background process needs reloading.
+- MyMemory translations now appear paragraph by paragraph; if the service fails,
+  earlier results remain visible and the error identifies the interruption.
 
 ## 0.1.0 — initial source import
 

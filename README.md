@@ -9,7 +9,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the 
 - Bilingual paragraph translation, with the original webpage preserved.
 - A no-account MyMemory mode with 30 selectable source and target languages.
   Availability and quality depend on the language pair and the provider.
-- Translation in groups of five paragraphs, including title, article opening and adjacent-paragraph context.
+- AI translation in groups of five paragraphs, including title, article opening
+  and adjacent-paragraph context. MyMemory translates paragraphs individually.
 - OpenAI-compatible `chat/completions` API with an arbitrary HTTPS base URL, including many personal API gateways; local HTTP model servers on `localhost` / `127.0.0.1`.
 - Native Google Gemini `generateContent` and Anthropic Claude Messages APIs.
   Each API type stores its own model name and key separately.

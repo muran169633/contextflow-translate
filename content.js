@@ -5,7 +5,7 @@
   const ROOT_CLASS = "cf-translation";
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, total: 0, items: [], messages: {}, engine: null};
+  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null};
   function uiText(key, values = {}) {
     const template = state.messages[key] || key;
     return template.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? String(values[name]) : match);
@@ -129,7 +129,8 @@
   }
 
   async function processParagraphs(items, token) {
-    const batchSize = 5;
+    // The free service translates individual paragraphs; retain earlier successes if a later one fails.
+    const batchSize = state.engine?.provider === "mymemory" ? 1 : 5;
     for (let index = 0; index < items.length; index += batchSize) {
       if (state.stop || state.token !== token) break;
       const group = items.slice(index, index + batchSize);
@@ -157,13 +158,16 @@
           renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
           state.failed++;
         }
-        if (error.fatal) state.stop = true;
+        if (error.fatal) {
+          state.failureReason = String(error.message || error);
+          state.stop = true;
+        }
       }
     }
     if (state.token !== token) return;
     state.running = false;
     if (state.stop) {
-      showToast(uiText("progressStopped", {done: state.done, failed: state.failed}), "warn");
+      showToast(uiText(state.failureReason ? "progressFailed" : "progressStopped", {done: state.done, failed: state.failed, error: state.failureReason}), "warn");
     } else {
       showToast(uiText("progressDone", {done: state.done, failed: state.failed}), state.failed ? "warn" : "done");
     }
@@ -176,6 +180,7 @@
     state.stop = false;
     state.done = 0;
     state.failed = 0;
+    state.failureReason = "";
     state.running = true;
     clearTranslations();
     const entries = getParagraphs(preferences?.maxBlocks || 50);

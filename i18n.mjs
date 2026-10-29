@@ -61,6 +61,12 @@ Object.assign(messages.ja, {refreshPage: 'ページで古い拡張機能が動�
 Object.assign(messages.es, {refreshPage: 'La página ejecuta una versión antigua de la extensión. Actualiza la página y vuelve a intentarlo.', reloadExtension: 'El proceso de la extensión está desactualizado. Recarga la extensión y después actualiza la página.'});
 Object.assign(messages.de, {refreshPage: 'Die Seite verwendet ein altes Erweiterungsskript. Lade die Seite neu und versuche es erneut.', reloadExtension: 'Der Hintergrunddienst der Erweiterung ist veraltet. Lade die Erweiterung und dann die Seite neu.'});
 Object.assign(messages.ko, {refreshPage: '페이지에서 이전 확장 프로그램이 실행 중입니다. 페이지를 새로고침한 후 다시 시도하세요.', reloadExtension: '확장 프로그램의 백그라운드가 이전 버전입니다. 확장 프로그램을 다시 로드한 뒤 페이지를 새로고침하세요.'});
+Object.assign(messages['zh-CN'], {progressFailed: '翻译中断：{error}。已完成 {done} 段，失败 {failed} 段；其他段落尚未翻译。'});
+Object.assign(messages.en, {progressFailed: 'Translation stopped: {error}. Completed {done}, failed {failed}; remaining passages were not translated.'});
+Object.assign(messages.ja, {progressFailed: '翻訳中断：{error}。完了 {done}、失敗 {failed}。残りは翻訳されていません。'});
+Object.assign(messages.es, {progressFailed: 'Traducción interrumpida: {error}. Completados {done}, fallidos {failed}; el resto no se tradujo.'});
+Object.assign(messages.de, {progressFailed: 'Übersetzung unterbrochen: {error}. {done} übersetzt, {failed} fehlgeschlagen; übrige Absätze wurden nicht übersetzt.'});
+Object.assign(messages.ko, {progressFailed: '번역 중단: {error}. 완료 {done}, 실패 {failed}. 나머지 문단은 번역되지 않았습니다.'});
 
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
@@ -85,7 +91,7 @@ export function applyTranslations(root, language) {
   for (const node of root.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = translate(language, node.dataset.i18nPlaceholder);
 }
 export function contentMessages(language) {
-  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressStopped', 'progressDone', 'progressError', 'noParagraphs'];
+  const keys = ['translationFailed', 'translationLabel', 'retry', 'retryTitle', 'rechecking', 'requestFailed', 'translating', 'progressStopped', 'progressFailed', 'progressDone', 'progressError', 'noParagraphs'];
   return Object.fromEntries(keys.map(key => [key, translate(language, key)]));
 }
 
