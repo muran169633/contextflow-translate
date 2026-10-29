@@ -15,7 +15,7 @@ globalThis.fetch = async url => {
   return {ok: true, json: async () => ({responseStatus: 200, responseData: {translatedText: '无需模型的翻译'}})};
 };
 await import('../background.js');
-const run = () => new Promise(resolve => listener({type: 'CF_TRANSLATE', entries: [{id: 'cf-1', text: 'A short test paragraph.'}], context: {}}, {id: 'test', tab: {id: 1}}, resolve));
+const run = engine => new Promise(resolve => listener({type: 'CF_TRANSLATE', entries: [{id: 'cf-1', text: 'A short test paragraph.'}], context: {}, engine}, {id: 'test', tab: {id: 1}}, resolve));
 
 test('无需模型的免费翻译走正式后台入口并缓存', async () => {
   const first = await run();
@@ -24,4 +24,14 @@ test('无需模型的免费翻译走正式后台入口并缓存', async () => {
   const second = await run();
   assert.equal(second.cacheHit, true);
   assert.equal(fetchCount, 1);
+});
+
+test('每次运行的服务选择不受后台旧配置影响', async () => {
+  store.translationEngine = {provider: 'ai', source: 'en', target: 'zh-CN'};
+  const free = await run({provider: 'mymemory', source: 'en', target: 'zh-CN'});
+  assert.equal(free.ok, true);
+  assert.equal(free.translations['cf-1'], '无需模型的翻译');
+  const invalid = await run({provider: 'unknown', source: 'en', target: 'zh-CN'});
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.error, /Invalid translation engine/);
 });

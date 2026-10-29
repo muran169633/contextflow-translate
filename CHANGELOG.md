@@ -11,6 +11,8 @@
   MyMemory translation with selectable source and target languages.
 - Added native Gemini and Claude API support with per-provider connection
   settings; existing OpenAI-compatible configurations remain supported.
+- Fixed service selection for page translations and retries, and added prompts
+  when an older page script or background process needs reloading.
 
 ## 0.1.0 — initial source import
 

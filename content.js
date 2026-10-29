@@ -5,7 +5,7 @@
   const ROOT_CLASS = "cf-translation";
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, total: 0, items: [], messages: {}};
+  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, total: 0, items: [], messages: {}, engine: null};
   function uiText(key, values = {}) {
     const template = state.messages[key] || key;
     return template.replace(/\{(\w+)\}/g, (match, name) => Object.hasOwn(values, name) ? String(values[name]) : match);
@@ -119,7 +119,7 @@
         opening: item.text, before: "", after: ""
       };
       const result = await chrome.runtime.sendMessage({
-        type: "CF_TRANSLATE", entries: [{id: item.id, text: item.text}], context, force: true
+        type: "CF_TRANSLATE", entries: [{id: item.id, text: item.text}], context, engine: state.engine, force: true
       });
       if (!result?.ok) throw new Error(result?.error || "Unknown API error");
       renderTranslation(item, result.translations[item.id]);
@@ -138,6 +138,7 @@
         const response = await chrome.runtime.sendMessage({
           type: "CF_TRANSLATE",
           entries: group.map(item => ({id: item.id, text: item.text})),
+          engine: state.engine,
           context: getContext(items, index, index + group.length)
         });
         if (state.stop || state.token !== token) break;
@@ -170,6 +171,7 @@
 
   function startTranslation(preferences) {
     state.messages = preferences?.messages || {};
+    state.engine = preferences?.engine ? {...preferences.engine} : null;
     state.token++;
     state.stop = false;
     state.done = 0;
@@ -196,7 +198,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, running: state.running, count: state.total});
+      sendResponse({ok: true, protocol: 2, running: state.running, count: state.total});
     } else if (message?.type === "CF_START") {
       sendResponse({ok: true, ...startTranslation(message.preferences)});
     } else if (message?.type === "CF_STOP") {

@@ -55,6 +55,13 @@ Object.assign(messages.es, {aiApiType: 'Tipo de API del modelo', compatibleProvi
 Object.assign(messages.de, {aiApiType: 'Modell-API-Typ', compatibleProvider: 'OpenAI-kompatible API (mehrere Anbieter)', providerSeparate: 'Jeder API-Typ speichert Modell, Endpunkt und Schlüssel separat.', nativeEndpointHelp: 'Der offizielle Endpunkt ist fest; gib Modell-ID und API-Schlüssel ein.', connectionHelp: 'Unterstützt OpenAI-kompatible sowie offizielle Gemini- und Claude-APIs.', needModel: 'Gib zuerst die Modell-ID des gewählten Anbieters in den Einstellungen ein.'});
 Object.assign(messages.ko, {aiApiType: '모델 API 유형', compatibleProvider: 'OpenAI 호환 API (여러 서비스)', providerSeparate: 'API 유형별로 모델, 주소와 키를 별도로 저장합니다.', nativeEndpointHelp: '공식 엔드포인트는 고정되어 있습니다. 모델 ID와 API 키를 입력하세요.', connectionHelp: 'OpenAI 호환 API와 Gemini 및 Claude 공식 API를 지원합니다.', needModel: '먼저 설정에서 선택한 서비스의 모델 ID를 입력하세요.'});
 
+Object.assign(messages['zh-CN'], {refreshPage: '网页仍在运行旧版扩展，请刷新网页后重试。', reloadExtension: '扩展后台版本未更新，请在扩展管理页面重新加载扩展，再刷新网页。'});
+Object.assign(messages.en, {refreshPage: 'The page is running an older extension script. Refresh the page and try again.', reloadExtension: 'The extension background is outdated. Reload the extension, then refresh the page.'});
+Object.assign(messages.ja, {refreshPage: 'ページで古い拡張機能が動作しています。ページを更新して再試行してください。', reloadExtension: '拡張機能のバックグラウンドが古いバージョンです。拡張機能を再読み込みしてからページを更新してください。'});
+Object.assign(messages.es, {refreshPage: 'La página ejecuta una versión antigua de la extensión. Actualiza la página y vuelve a intentarlo.', reloadExtension: 'El proceso de la extensión está desactualizado. Recarga la extensión y después actualiza la página.'});
+Object.assign(messages.de, {refreshPage: 'Die Seite verwendet ein altes Erweiterungsskript. Lade die Seite neu und versuche es erneut.', reloadExtension: 'Der Hintergrunddienst der Erweiterung ist veraltet. Lade die Erweiterung und dann die Seite neu.'});
+Object.assign(messages.ko, {refreshPage: '페이지에서 이전 확장 프로그램이 실행 중입니다. 페이지를 새로고침한 후 다시 시도하세요.', reloadExtension: '확장 프로그램의 백그라운드가 이전 버전입니다. 확장 프로그램을 다시 로드한 뒤 페이지를 새로고침하세요.'});
+
 export const supportedLanguages = Object.freeze(['zh-CN', 'en', 'ja', 'es', 'de', 'ko']);
 export function translationKeys(language) {
   return Object.keys(messages[resolveLanguage(language)]);

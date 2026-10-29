@@ -27,8 +27,7 @@ function renderEngine() {
   }
 }
 
-function persistEngine() {
-  const snapshot = {...engine};
+function persistEngine(snapshot = {...engine}) {
   saveQueue = saveQueue.catch(() => {}).then(() => chrome.storage.local.set({translationEngine: snapshot}));
   return saveQueue;
 }
@@ -60,10 +59,11 @@ async function currentTab() {
 
 async function communicate(type, preferences) {
   const tab = await currentTab();
-  let installed = false;
-  try { installed = !!(await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}))?.ok; }
+  let ping;
+  try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}); }
   catch {}
-  if (!installed) {
+  if (ping?.ok && ping.protocol !== 2) throw new Error(t("refreshPage"));
+  if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
   }
@@ -94,22 +94,28 @@ async function copyDiscussion() {
 
 async function runAction(kind) {
   if (busy) return;
+  const selectedEngine = {...engine};
   let permission;
-  if (kind === "CF_START" && engine.provider === "mymemory") {
-    if (engine.source === engine.target) { status(t("sameLanguage"), "error"); return; }
+  if (kind === "CF_START" && selectedEngine.provider === "mymemory") {
+    if (selectedEngine.source === selectedEngine.target) { status(t("sameLanguage"), "error"); return; }
     // Called synchronously from the click handler to preserve the user gesture.
     permission = chrome.permissions.request({origins: [FREE_ORIGIN]});
   }
   busy = true;
   for (const button of document.querySelectorAll("button")) button.disabled = true;
+  for (const id of ["provider", "freeSource", "freeTarget"]) $(id).disabled = true;
   try {
     if (kind === "CF_START") {
       const config = await settings();
-      if (engine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
+      if (selectedEngine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
       if (permission && !await permission) throw new Error(t("permissionFree"));
-      await persistEngine();
+      let protocol;
+      try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
+      catch { throw new Error(t("reloadExtension")); }
+      if (!protocol?.ok || protocol.protocol !== 2) throw new Error(t("reloadExtension"));
+      await persistEngine(selectedEngine);
       status(t("starting"), "info");
-      const result = await communicate(kind, {maxBlocks: config.maxBlocks, messages: contentMessages(language)});
+      const result = await communicate(kind, {engine: selectedEngine, maxBlocks: config.maxBlocks, messages: contentMessages(language)});
       status(result.started
         ? t("started", {count: result.found})
         : t("noParagraphs"), result.started ? "success" : "error");
@@ -125,6 +131,7 @@ async function runAction(kind) {
   } finally {
     busy = false;
     for (const button of document.querySelectorAll("button")) button.disabled = false;
+    for (const id of ["provider", "freeSource", "freeTarget"]) $(id).disabled = false;
   }
 }
 

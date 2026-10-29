@@ -3,7 +3,7 @@ import {
   makeTranslationMessages, makeReviewMessages,
   parseModelTranslations, normalizeEntries
 } from "./core.mjs";
-import {FREE_ORIGIN, normalizeEngine, translateFree} from "./free-translate.mjs";
+import {FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, translateFree} from "./free-translate.mjs";
 import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
 
 // Keep API credentials away from content scripts. Options/popup/service worker remain trusted.
@@ -66,10 +66,13 @@ async function sha256(text) {
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function translationWithCache(entries, context, force = false, forceAi = false) {
+async function translationWithCache(entries, context, force = false, forceAi = false, requestedEngine = null) {
   const settings = await readSettings();
   const {translationEngine} = await chrome.storage.local.get("translationEngine");
-  const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(translationEngine, !!String(settings.model || "").trim());
+  if (requestedEngine && (!['mymemory', 'ai'].includes(requestedEngine.provider) || !LANGUAGE_CODES.includes(requestedEngine.source) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
+    throw new Error("Invalid translation engine selection.");
+  }
+  const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(requestedEngine || translationEngine, !!String(settings.model || "").trim());
   if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
   const url = engine.provider === "ai" ? modelEndpoint(settings) : FREE_ORIGIN;
   const key = await sha256(JSON.stringify({
@@ -131,11 +134,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
 
   (async () => {
+    if (message?.type === "CF_ENGINE_PROTOCOL") {
+      if (sender.tab) throw new Error("Protocol check must originate from the extension.");
+      return {protocol: 2};
+    }
     if (message?.type === "CF_TRANSLATE") {
       if (!sender.tab) throw new Error("Translation requests must originate from an active webpage.");
       const entries = normalizeEntries(message.entries);
       const context = safeContext(message.context);
-      return await translationWithCache(entries, context, message.force === true);
+      return await translationWithCache(entries, context, message.force === true, false, message.engine);
     }
     if (message?.type === "CF_TEST") {
       if (sender.tab) throw new Error("Connection test must be triggered from the extension settings.");

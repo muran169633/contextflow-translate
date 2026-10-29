@@ -38,6 +38,11 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose the 
 
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
 
+After updating the extension, reload it from the browser's extension management
+page and refresh the webpage before starting a new translation. Each run and
+its retries use the provider and language pair selected when the run started;
+after switching providers, click **Translate page** again to start a new run.
+
 Select **Interface language** in the popup or settings to change the UI.
 On first use the extension follows the browser language when supported and
 otherwise defaults to English. Switching the interface does not change the
