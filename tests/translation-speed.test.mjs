@@ -128,3 +128,39 @@ test('百度自动识别逐段发送，并在停止后不继续排队', async ()
   await tick();
   assert.equal(fixture.pending.length,1);
 });
+
+test('Google 超长段落最多三片并发，乱序返回后按原顺序显示', async () => {
+  const text='A'.repeat(1600)+'B'.repeat(1600)+'C'.repeat(1600)+'D'.repeat(1600);
+  const fixture=page('google-web',1,[0],1,()=>text);
+  await tick();
+  assert.equal(fixture.pending.length,3);
+  const complete=(index,translation)=>fixture.pending[index].resolve({ok:true,translations:{[fixture.pending[index].message.entries[0].id]:translation}});
+  complete(2,'第三'); await tick();
+  assert.equal(fixture.pending.length,4);
+  complete(3,'第四'); complete(1,'第二'); complete(0,'第一');
+  await tick();
+  assert.equal(fixture.paragraphs[0].translated.children[1].textContent,'第一第二第三第四');
+  assert.match(fixture.getToast().textContent,/1 translated, 0 failed/);
+});
+
+test('停止时 Google 超长段落不再启动后续分片，也不显示已完成结果', async () => {
+  const fixture=page('google-web',1,[0],1,()=>('long text '.repeat(800)));
+  await tick();
+  assert.equal(fixture.pending.length,3);
+  fixture.listener({type:'CF_STOP'}, {}, () => {});
+  for (const request of fixture.pending) finish(request);
+  await tick();
+  assert.equal(fixture.pending.length,3);
+  assert.equal(fixture.paragraphs[0].translated,undefined);
+});
+
+test('Google 超长段落分片出错后不启动剩余分片', async () => {
+  const fixture=page('google-web',1,[0],1,()=>('long text '.repeat(800)));
+  await tick();
+  fixture.pending[0].resolve({ok:false,fatal:true,error:'HTTP 429'});
+  await tick();
+  finish(fixture.pending[1]); finish(fixture.pending[2]);
+  await tick();
+  assert.equal(fixture.pending.length,3);
+  assert.match(fixture.getToast().textContent,/429/);
+});

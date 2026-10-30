@@ -32,12 +32,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0}); } catch {}
-  if (ping?.ok && ping.protocol !== 19) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 20) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0});
-    if (!ping?.ok || ping.protocol !== 19) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 20) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}}, {frameId: 0});
   return ping;
@@ -176,6 +176,23 @@ async function sha256(text) {
 }
 
 let cacheWriteQueue = Promise.resolve();
+const googleWebFlights = new Map();
+async function translateGoogleWebShared(entries, engine, keys, force) {
+  if (force) return translateGoogleWeb(entries, engine);
+  // 仅共享完全相同的请求；按顺序保存译文，避免不同页面的段落 ID 串用。
+  const flightKey = keys.join(":");
+  let flight = googleWebFlights.get(flightKey);
+  if (!flight) {
+    flight = translateGoogleWeb(entries, engine).then(result => entries.map(entry => result[entry.id]));
+    googleWebFlights.set(flightKey, flight);
+  }
+  try {
+    const values = await flight;
+    return Object.fromEntries(entries.map((entry, index) => [entry.id, values[index]]));
+  } finally {
+    if (googleWebFlights.get(flightKey) === flight) googleWebFlights.delete(flightKey);
+  }
+}
 async function storeCache(keys, entries, translations, reviewed) {
   const write = cacheWriteQueue.catch(() => {}).then(async () => {
     const {translationCache = {}} = await chrome.storage.local.get("translationCache");
@@ -241,7 +258,7 @@ async function translationWithCache(entries, context, force = false, forceAi = f
   if (["mymemory", "google-web", "google", "youdao", "microsoft", "libre-local", "baidu"].includes(engine.provider)) {
     try {
       if (!await chrome.permissions.contains({origins: [url]})) throw new Error("Translation provider host access is not granted.");
-      translations = engine.provider === "baidu" ? await translateBaidu(pendingEntries, engine, settings.baiduAppId, settings.baiduAppSecret) : engine.provider === "libre-local" ? await translateLibreLocal(pendingEntries, engine) : engine.provider === "microsoft" ? await translateMicrosoft(pendingEntries, engine, settings.microsoftKey, settings.microsoftRegion) : engine.provider === "youdao" ? await translateYoudao(pendingEntries, engine, settings.youdaoAppKey, settings.youdaoAppSecret) : engine.provider === "google" ? await translateGoogle(pendingEntries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWeb(pendingEntries, engine) : await translateFree(pendingEntries, engine);
+      translations = engine.provider === "baidu" ? await translateBaidu(pendingEntries, engine, settings.baiduAppId, settings.baiduAppSecret) : engine.provider === "libre-local" ? await translateLibreLocal(pendingEntries, engine) : engine.provider === "microsoft" ? await translateMicrosoft(pendingEntries, engine, settings.microsoftKey, settings.microsoftRegion) : engine.provider === "youdao" ? await translateYoudao(pendingEntries, engine, settings.youdaoAppKey, settings.youdaoAppSecret) : engine.provider === "google" ? await translateGoogle(pendingEntries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWebShared(pendingEntries, engine, pendingKeys, force) : await translateFree(pendingEntries, engine);
     } catch (error) {
       if (error.fatal !== false) error.fatal = true;
       throw error;
@@ -272,7 +289,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 19};
+      return {protocol: 20};
     }
     if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       if (!sender.tab || sender.frameId !== 0 || !isKaggleNotebook(sender.tab.url)) throw new Error("Invalid notebook viewport sender.");

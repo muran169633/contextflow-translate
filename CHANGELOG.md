@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Sent Google web chunks of long paragraphs concurrently and reused identical
+  in-flight requests across pages, while preserving order and manual retries.
 - Reduced Google web fallback latency by concurrently translating unmatched
   paragraphs and long-paragraph segments, with a shared three-request limit.
 - Added Baidu's general text translation API with user-provided credentials,

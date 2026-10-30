@@ -8,7 +8,7 @@ globalThis.chrome={
   webNavigation:{getAllFrames:async () => frames},
   tabs:{sendMessage:async (tabId, message, options) => {
     operations.push({action:'message',tabId,type:message.type,frameId:options.frameId,documentId:options.documentId});
-    if (message.type==='CF_PING') {if (!installed) throw Error('no script'); return {ok:true,protocol:19};}
+    if (message.type==='CF_PING') {if (!installed) throw Error('no script'); return {ok:true,protocol:20};}
     return {ok:true,started:message.type==='CF_START',found:message.type==='CF_START'?4:0};
   }},
   scripting:{insertCSS:async payload => {operations.push({action:'css',payload});},executeScript:async payload => {operations.push({action:'script',payload});installed=true;}}

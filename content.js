@@ -127,27 +127,35 @@
     const prepared = items.map(item => state.engine?.provider === "google-web" ? prepareGoogleParagraph(item, context) : {id: item.id, text: item.text, tokens: []});
     const chunks = prepared.length === 1 ? splitParagraph(prepared[0].text) : null;
     const groups = chunks ? chunks.map(text => [{id: prepared[0].id, text}]) : [prepared.map(item => ({id: item.id, text: item.text}))];
-    const parts = [];
-    let lastResponse;
-    for (const entries of groups) {
-      if ((state.stop && !force) || state.token !== token) return null;
-      const response = await chrome.runtime.sendMessage({type: "CF_TRANSLATE", entries, context, engine: state.engine, force});
-      if ((state.stop && !force) || state.token !== token) return null;
-      if (!response?.ok) {
-        const error = new Error(response?.error || "Unexpected translation failure");
-        error.fatal = response?.fatal === true;
-        throw error;
+    const responses = [];
+    let next = 0;
+    let failure;
+    async function worker() {
+      while (!failure && next < groups.length && !(state.stop && !force) && state.token === token) {
+        const index = next++;
+        const entries = groups[index];
+        try {
+          const response = await chrome.runtime.sendMessage({type: "CF_TRANSLATE", entries, context, engine: state.engine, force});
+          if ((state.stop && !force) || state.token !== token) return;
+          if (!response?.ok) {
+            const error = new Error(response?.error || "Unexpected translation failure");
+            error.fatal = response?.fatal === true;
+            throw error;
+          }
+          if (entries.some(entry => typeof response.translations?.[entry.id] !== "string" || !response.translations[entry.id].trim())) throw new Error("Translation response is incomplete.");
+          responses[index] = response;
+        } catch (error) { failure ||= error; }
       }
-      if (entries.some(entry => typeof response.translations?.[entry.id] !== "string" || !response.translations[entry.id].trim())) {
-        throw new Error("Translation response is incomplete.");
-      }
-      lastResponse = response;
-      if (chunks) parts.push(response.translations[items[0].id]);
     }
+    const concurrency = state.engine?.provider === "google-web" && chunks?.length > 1 ? Math.min(3, groups.length) : 1;
+    await Promise.all(Array.from({length: concurrency}, () => worker()));
+    if ((state.stop && !force) || state.token !== token) return null;
+    if (failure) throw failure;
+    const lastResponse = responses[responses.length - 1];
     if (chunks) {
       const target = state.engine?.provider === "ai" ? state.target : state.engine?.target || "";
       const separator = /chinese|japanese|^zh\b|^ja\b/i.test(target) ? "" : " ";
-      lastResponse.translations[items[0].id] = parts.map(part => part.trim()).join(separator);
+      lastResponse.translations[items[0].id] = responses.map(response => response.translations[items[0].id].trim()).join(separator);
     }
     for (const entry of prepared) {
       let translated = lastResponse.translations[entry.id];
@@ -604,7 +612,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 19, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 20, running: state.running, count: state.total, displayMode: state.displayMode});
     } else if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       sendResponse({ok: true, viewport: notebookViewport()});
     } else if (message?.type === "CF_SET_VIEWPORT") {
