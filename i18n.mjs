@@ -268,10 +268,18 @@ const endpointErrors = {
 };
 export function localizeError(language, error) {
   const original = String(error?.message || error);
+  if (original.includes('Only permissions specified in the manifest may be requested')) return translate(language, 'permissionManifestMismatch');
   const variants = endpointErrors[original];
   const index = supportedLanguages.indexOf(resolveLanguage(language));
   return variants ? variants[index] || variants[1] : original;
 }
+
+Object.assign(messages['zh-CN'], {permissionManifestMismatch:'当前加载的扩展权限清单不包含所需权限。请在扩展管理页重新加载 ContextFlow，再刷新网页后重试。'});
+Object.assign(messages.en, {permissionManifestMismatch:'The loaded extension manifest does not include the required permission. Reload ContextFlow in the extension manager, refresh the page, and try again.'});
+Object.assign(messages.ja, {permissionManifestMismatch:'読み込まれた拡張機能の権限に必要な項目がありません。拡張機能の管理画面で ContextFlow を再読み込みし、ページを更新してください。'});
+Object.assign(messages.es, {permissionManifestMismatch:'El manifiesto cargado no incluye el permiso necesario. Recarga ContextFlow en el administrador de extensiones, actualiza la página y vuelve a intentarlo.'});
+Object.assign(messages.de, {permissionManifestMismatch:'Das geladene Erweiterungsmanifest enthält die erforderliche Berechtigung nicht. Lade ContextFlow in der Erweiterungsverwaltung und danach die Seite neu.'});
+Object.assign(messages.ko, {permissionManifestMismatch:'로드된 확장 프로그램 권한 목록에 필요한 권한이 없습니다. 확장 프로그램 관리에서 ContextFlow를 다시 로드한 뒤 페이지를 새로고침하세요.'});
 
 Object.assign(messages['zh-CN'], {baiduProvider:'百度翻译 · 通用文本 API', baiduNote:'需要百度 App ID 和密钥。标准版每月 5 万字符免费；个人认证高级版每月 100 万字符，超出后可能收费。', baiduPrivacy:'文本会发送给百度。网页中使用自动翻译、重试或批次拆分可能增加用量；部分语种需要企业尊享版。', baiduPricing:'百度翻译额度与定价', baiduAppId:'百度 App ID', baiduAppSecret:'百度密钥', baiduKeyHelp:'在百度翻译开放平台开通通用文本翻译并获取凭据。密钥存于浏览器本地，未单独加密；注意用量和超额计费。', saveBaiduKey:'保存百度凭据', baiduKeySaved:'百度凭据已保存。返回扩展选择百度翻译。', baiduNeedKey:'请先在设置中保存百度 App ID 和密钥。', permissionBaidu:'请允许访问百度翻译服务后再翻译。'});
 Object.assign(messages.en, {baiduProvider:'Baidu Translate · text API', baiduNote:'Requires an App ID and secret. The standard plan includes 50,000 characters per month; verified personal accounts get 1 million. Overage may be charged.', baiduPrivacy:'Text is sent to Baidu. Dynamic translation, retries and splitting batches can increase usage; some languages require an enterprise plan.', baiduPricing:'Baidu pricing and quota', baiduAppId:'Baidu App ID', baiduAppSecret:'Baidu secret', baiduKeyHelp:'Enable the general text translation API and obtain credentials. They are stored locally without separate encryption; monitor usage and overage charges.', saveBaiduKey:'Save Baidu credentials', baiduKeySaved:'Baidu credentials saved. Select Baidu in the popup.', baiduNeedKey:'Save your Baidu App ID and secret in Settings first.', permissionBaidu:'Allow access to Baidu Translate before translating.'});

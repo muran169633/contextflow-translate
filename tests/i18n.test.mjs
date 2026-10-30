@@ -17,6 +17,8 @@ test('所有界面与网页提示键均有六种语言的文案', async () => {
   assert.equal(resolveLanguage('pt-BR'), 'en');
   assert.match(translate('ja', 'copied', {count: 4}), /4/);
   assert.equal(localizeError('zh-CN', new Error('Invalid API base URL.')), 'API 基础地址无效。');
+  assert.match(localizeError('zh-CN', new Error('Only permissions specified in the manifest may be requested.')), /重新加载 ContextFlow/);
+  assert.match(localizeError('en', new Error('Only permissions specified in the manifest may be requested.')), /Reload ContextFlow/);
   assert.equal(localizeError('ja', new Error('provider failure')), 'provider failure');
 });
 

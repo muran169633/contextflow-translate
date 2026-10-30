@@ -179,6 +179,12 @@ extension warns that some content remains. With dynamic translation enabled,
 subsequent scrolling or page changes can send further batches. Longer paragraphs are split into
 bounded requests and combined for display.
 
+If the browser reports “Only permissions specified in the manifest may be
+requested”, the extension may still be using an older loaded manifest. Open
+`edge://extensions` or `chrome://extensions`, reload ContextFlow, and then
+refresh the webpage. If the error remains, verify that the loaded unpacked
+extension points to the current directory containing this `manifest.json`.
+
 ### Kaggle Notebook 正文
 
 Kaggle Notebook 的正文通常位于 `www.kaggleusercontent.com` 内嵌框架，

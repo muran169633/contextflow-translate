@@ -1,7 +1,7 @@
 import {DEFAULT_SETTINGS} from "./core.mjs";
 import {formatDiscussion} from "./discussion-core.mjs";
 import {setupLanguage, translate} from "./ui-language.mjs";
-import {contentMessages} from "./i18n.mjs";
+import {contentMessages, localizeError} from "./i18n.mjs";
 import {DEFAULT_ENGINE, FREE_ORIGIN, LANGUAGE_CODES, normalizeEngine, supportsAutoSource} from "./free-translate.mjs";
 import {GOOGLE_TRANSLATE_ORIGIN} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN} from "./google-web-translate.mjs";
@@ -156,6 +156,13 @@ async function runAction(kind) {
   const selectedEngine = {...engine};
   let permission;
   const notebook = isKaggleNotebook(activeTabUrl);
+  if (["CF_START", "CF_CONTINUE"].includes(kind) && notebook && chrome.runtime.getManifest) {
+    const manifest = chrome.runtime.getManifest();
+    if (![...(manifest.permissions || []), ...(manifest.optional_permissions || [])].includes("webNavigation")) {
+      status(t("permissionManifestMismatch"), "error");
+      return;
+    }
+  }
   let origin;
   if (["CF_START", "CF_CONTINUE"].includes(kind) && ["mymemory", "google-web", "google", "youdao", "microsoft", "libre-local", "baidu"].includes(selectedEngine.provider)) {
     if (selectedEngine.source === selectedEngine.target) { status(t("sameLanguage"), "error"); return; }
@@ -169,7 +176,7 @@ async function runAction(kind) {
   if (["CF_START", "CF_CONTINUE"].includes(kind) && (origin || notebook)) {
     status(t("starting"), "info");
     try { permission = chrome.permissions.request({origins: [origin, notebook ? KAGGLE_NOTEBOOK_ORIGIN : null].filter(Boolean), ...(notebook ? {permissions: ["webNavigation"]} : {})}); }
-    catch (error) { status(String(error?.message || error), "error"); return; }
+    catch (error) { status(localizeError(language, error), "error"); return; }
   }
   busy = true;
   for (const button of document.querySelectorAll("button")) button.disabled = true;
@@ -203,7 +210,7 @@ async function runAction(kind) {
       status(t("cleared") + warning, warning ? "error" : "success");
     }
   } catch (error) {
-    status(String(error?.message || error), "error");
+    status(localizeError(language, error), "error");
   } finally {
     busy = false;
     for (const button of document.querySelectorAll("button")) button.disabled = false;
