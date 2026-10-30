@@ -1,8 +1,14 @@
 # ContextFlow Translate 0.1.0
 
+**中文用户：** [查看图文使用教程](docs/图文使用教程.md) · [下载最新源码](https://github.com/muran169633/contextflow-translate/archive/refs/heads/main.zip)
+
 A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Baidu Translate, local LibreTranslate, Youdao Cloud Translation, Microsoft Translator, Google Cloud Translation, or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
+
+![双语网页阅读示例](docs/images/04-双语阅读示例.png)
+
+示例页面使用预设译文展示界面，不代表特定翻译服务的实际效果。
 
 ## Supported in this MVP
 
