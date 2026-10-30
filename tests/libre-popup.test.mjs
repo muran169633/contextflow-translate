@@ -16,11 +16,11 @@ test('本机 LibreTranslate 入口申请本机权限并使用所选服务启动'
     storage: {local: {get: async key => ({[key]: saved[key]}), set: async data => Object.assign(saved, data)}},
     permissions: {request: ({origins}) => { origin = origins[0]; return Promise.resolve(true); }},
     tabs: {query: async () => [{id: 1, url: 'https://example.com/article'}], sendMessage: async (_id, message) => {
-      if (message.type === 'CF_PING') return {ok: true, protocol: 20};
+      if (message.type === 'CF_PING') return {ok: true, protocol: 21};
       if (message.type === 'CF_QUICK_SHOW') return {ok: true};
       started = message;
       return {started: true, found: 1};
-    }}, scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 20})}
+    }}, scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 21})}
   };
   try {
     await import('../popup.js');

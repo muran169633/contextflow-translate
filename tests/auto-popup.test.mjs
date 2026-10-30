@@ -10,7 +10,7 @@ test('可选择自动源语言，切换 MyMemory 时清楚提示使用英语',as
   globalThis.document={documentElement:{},createElement:()=>({}),getElementById:id=>nodes.get(id),querySelectorAll:()=>[]};
   Object.defineProperty(globalThis,'navigator',{configurable:true,value:{language:'zh-CN'}});
   globalThis.chrome={storage:{local:{get:async key=>({[key]:store[key]}),set:async data=>Object.assign(store,data)}},
-    tabs:{query:async()=>[{id:1,url:'https://example.com/article'}],sendMessage:async (_id,message)=>message.type==='CF_PING'?{ok:true,protocol:20}:{ok:true}},scripting:{},runtime:{}};
+    tabs:{query:async()=>[{id:1,url:'https://example.com/article'}],sendMessage:async (_id,message)=>message.type==='CF_PING'?{ok:true,protocol:21}:{ok:true}},scripting:{},runtime:{}};
   try {
     await import('../popup.js?auto-test');await new Promise(resolve=>setImmediate(resolve));
     assert.equal(nodes.get('freeSource').options[0].value,'auto');

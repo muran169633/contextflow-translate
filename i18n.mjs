@@ -67,12 +67,12 @@ Object.assign(messages.ja, {progressFailed: '翻訳中断：{error}。完了 {do
 Object.assign(messages.es, {progressFailed: 'Traducción interrumpida: {error}. Completados {done}, fallidos {failed}; el resto no se tradujo.'});
 Object.assign(messages.de, {progressFailed: 'Übersetzung unterbrochen: {error}. {done} übersetzt, {failed} fehlgeschlagen; übrige Absätze wurden nicht übersetzt.'});
 Object.assign(messages.ko, {progressFailed: '번역 중단: {error}. 완료 {done}, 실패 {failed}. 나머지 문단은 번역되지 않았습니다.'});
-Object.assign(messages['zh-CN'], {limitWarning: '已达到本次 {limit} 段的上限，其余内容未翻译；可在设置中提高段落上限。'});
-Object.assign(messages.en, {limitWarning: 'The {limit}-paragraph limit was reached; remaining content was not translated. Increase the limit in Settings.'});
-Object.assign(messages.ja, {limitWarning: '上限の {limit} 段落に達したため、残りは翻訳されていません。設定で上限を増やせます。'});
-Object.assign(messages.es, {limitWarning: 'Se alcanzó el límite de {limit} párrafos; el resto no se tradujo. Puedes aumentar el límite en Configuración.'});
-Object.assign(messages.de, {limitWarning: 'Das Limit von {limit} Absätzen wurde erreicht; der Rest wurde nicht übersetzt. Erhöhe das Limit in den Einstellungen.'});
-Object.assign(messages.ko, {limitWarning: '{limit}문단 제한에 도달하여 나머지는 번역되지 않았습니다. 설정에서 제한을 늘릴 수 있습니다.'});
+Object.assign(messages['zh-CN'], {limitWarning: '已达到本次 {limit} 段的上限，其余内容未翻译；可点击“翻译新增或未完成内容”继续。'});
+Object.assign(messages.en, {limitWarning: 'The {limit}-paragraph limit was reached; remaining content was not translated. Select “Translate new or unfinished content” to continue.'});
+Object.assign(messages.ja, {limitWarning: '上限の {limit} 段落に達したため、残りは翻訳されていません。「新しい内容や未完了の内容を翻訳」で続行できます。'});
+Object.assign(messages.es, {limitWarning: 'Se alcanzó el límite de {limit} párrafos; el resto no se tradujo. Selecciona «Traducir contenido nuevo o pendiente» para continuar.'});
+Object.assign(messages.de, {limitWarning: 'Das Limit von {limit} Absätzen wurde erreicht; der Rest wurde nicht übersetzt. Wähle „Neue oder unvollständige Inhalte übersetzen“, um fortzufahren.'});
+Object.assign(messages.ko, {limitWarning: '{limit}문단 제한에 도달하여 나머지는 번역되지 않았습니다. 계속하려면 새 콘텐츠 또는 미완료 콘텐츠 번역을 선택하세요.'});
 Object.assign(messages['zh-CN'], {continueTranslation: '翻译新增或未完成内容', noNewParagraphs: '没有发现新增或未完成的段落。'});
 Object.assign(messages.en, {continueTranslation: 'Translate new or unfinished content', noNewParagraphs: 'No new or unfinished paragraphs found.'});
 Object.assign(messages.ja, {continueTranslation: '新規・未完了の内容を翻訳', noNewParagraphs: '新規または未完了の段落は見つかりませんでした。'});
@@ -154,6 +154,13 @@ Object.assign(messages.es, {maxBlocks:'Máximo de párrafos por lote', maxHelp:'
 Object.assign(messages.de, {maxBlocks:'Maximale Absätze pro Durchgang', maxHelp:'Standard: 50. Automatische Übersetzung kann weitere Durchgänge auslösen und Kontingent verbrauchen.'});
 Object.assign(messages.ko, {maxBlocks:'한 번에 번역할 최대 문단 수', maxHelp:'기본값은 50개입니다. 자동 번역은 추가 요청을 보내 할당량을 사용할 수 있습니다.'});
 
+Object.assign(messages['zh-CN'], {initialAutoContinue:'已加载的正文将自动分批继续翻译，每个页面或正文框架最多先处理 300 段，可能消耗额度。', maxHelp:'默认每批 50 段；启动后自动分批处理已加载内容，每个页面或正文框架最多先处理 300 段。可能消耗额度或产生费用。'});
+Object.assign(messages.en, {initialAutoContinue:'Loaded content continues in batches, initially up to 300 blocks per page or content frame; this can use quota.', maxHelp:'Default: 50 per batch. Loaded content continues automatically, initially up to 300 blocks per page or content frame; usage may incur charges.'});
+Object.assign(messages.ja, {initialAutoContinue:'読み込み済みの内容を分割して続けて翻訳します。ページまたは本文フレームごとに最初は最大 300 段落までで、利用枠を消費します。', maxHelp:'初期値は 1 回 50 段落です。読み込み済みの内容を続けて翻訳し、ページまたは本文フレームごとに最初は最大 300 段落までです。利用枠や料金が発生する場合があります。'});
+Object.assign(messages.es, {initialAutoContinue:'El contenido cargado continúa por lotes, inicialmente hasta 300 bloques por página o marco de contenido; puede consumir cuota.', maxHelp:'Por defecto 50 por lote. El contenido cargado continúa automáticamente, inicialmente hasta 300 bloques por página o marco; puede generar costes.'});
+Object.assign(messages.de, {initialAutoContinue:'Geladene Inhalte werden in Durchgängen weiter übersetzt, zunächst bis zu 300 Blöcke pro Seite oder Inhaltsrahmen; dies kann Kontingent verbrauchen.', maxHelp:'Standard: 50 pro Durchgang. Geladene Inhalte werden automatisch weiter übersetzt, zunächst bis zu 300 Blöcke pro Seite oder Inhaltsrahmen; es können Kosten entstehen.'});
+Object.assign(messages.ko, {initialAutoContinue:'로드된 내용은 일괄 처리로 계속 번역되며 페이지 또는 콘텐츠 프레임당 처음에는 최대 300개 블록을 처리합니다. 할당량이 사용될 수 있습니다.', maxHelp:'기본값은 일괄 처리당 50개입니다. 로드된 내용은 페이지 또는 콘텐츠 프레임당 처음에는 최대 300개 블록까지 자동으로 계속 처리되며 요금이 발생할 수 있습니다.'});
+
 Object.assign(messages['zh-CN'], {preferencesSaved:'设置已保存。返回网页后重新开始翻译使其生效。'});
 Object.assign(messages.en, {preferencesSaved:'Settings saved. Restart translation on the page to apply them.'});
 Object.assign(messages.ja, {preferencesSaved:'設定を保存しました。ページで翻訳を開始し直してください。'});
@@ -167,6 +174,13 @@ Object.assign(messages.ja, {dynamicEnabled:'自動翻訳はオンです。新し
 Object.assign(messages.es, {dynamicEnabled:'La traducción automática está activada: el contenido nuevo se envía al servicio y puede consumir cuota o generar cargos. Desactívala en Configuración.', dynamicDisabled:'La traducción automática está desactivada: traduce el contenido nuevo manualmente.'});
 Object.assign(messages.de, {dynamicEnabled:'Automatische Übersetzung ist aktiv: Neue sichtbare Inhalte werden an den Dienst gesendet und können Kontingent oder Kosten verursachen. In den Einstellungen abschaltbar.', dynamicDisabled:'Automatische Übersetzung ist aus: Neue Inhalte manuell übersetzen.'});
 Object.assign(messages.ko, {dynamicEnabled:'자동 번역이 켜져 있습니다. 새로 표시된 내용이 서비스로 전송되어 할당량이나 요금이 발생할 수 있습니다. 설정에서 끌 수 있습니다.', dynamicDisabled:'자동 번역이 꺼져 있습니다. 새 내용은 수동으로 번역하세요.'});
+
+Object.assign(messages['zh-CN'], {dynamicEnabled:'自动翻译已开启：启动后自动分批翻译已加载内容，每个页面或正文框架先处理最多 300 段；预算内新加载或展开的内容也会翻译，可能消耗额度或产生费用。', dynamicDisabled:'自动翻译已关闭：启动后自动分批翻译已加载内容，每个页面或正文框架先处理最多 300 段；新出现的内容需手动翻译，可能消耗额度或产生费用。'});
+Object.assign(messages.en, {dynamicEnabled:'Loaded content is translated in batches, initially up to 300 blocks per page or content frame. Newly loaded content is also translated while the budget remains; quota or charges may apply.', dynamicDisabled:'Loaded content is translated in batches, initially up to 300 blocks per page or content frame. New content requires manual translation; quota or charges may apply.'});
+Object.assign(messages.ja, {dynamicEnabled:'読み込み済みの内容を分割して翻訳し、ページまたは本文フレームごとに最初は最大 300 段落まで処理します。新しく表示された内容も翻訳され、利用枠や料金が発生する場合があります。', dynamicDisabled:'読み込み済みの内容を分割して翻訳し、ページまたは本文フレームごとに最初は最大 300 段落まで処理します。新しい内容は手動で翻訳してください。利用枠や料金が発生する場合があります。'});
+Object.assign(messages.es, {dynamicEnabled:'El contenido cargado se traduce por lotes, inicialmente hasta 300 bloques por página o marco. También se traduce el contenido nuevo visible; puede consumir cuota o generar costes.', dynamicDisabled:'El contenido cargado se traduce por lotes, inicialmente hasta 300 bloques por página o marco. El contenido nuevo requiere traducción manual; puede consumir cuota o generar costes.'});
+Object.assign(messages.de, {dynamicEnabled:'Geladene Inhalte werden in Durchgängen übersetzt, zunächst bis zu 300 Blöcke pro Seite oder Inhaltsrahmen. Neue sichtbare Inhalte werden ebenfalls übersetzt; Kontingent oder Kosten können anfallen.', dynamicDisabled:'Geladene Inhalte werden in Durchgängen übersetzt, zunächst bis zu 300 Blöcke pro Seite oder Inhaltsrahmen. Neue Inhalte müssen manuell übersetzt werden; Kontingent oder Kosten können anfallen.'});
+Object.assign(messages.ko, {dynamicEnabled:'로드된 내용은 페이지 또는 콘텐츠 프레임당 처음 최대 300개 블록까지 나누어 번역합니다. 새로 보이는 내용도 번역되며 할당량이나 요금이 발생할 수 있습니다.', dynamicDisabled:'로드된 내용은 페이지 또는 콘텐츠 프레임당 처음 최대 300개 블록까지 나누어 번역합니다. 새 내용은 수동으로 번역해야 하며 할당량이나 요금이 발생할 수 있습니다.'});
 
 Object.assign(messages['zh-CN'], {displayMode:'页面显示', displayBilingual:'双语对照', displayOriginal:'仅看原文', displayError:'无法切换页面显示，请刷新网页后重试。', showingOriginal:'已显示原文，译文暂时隐藏。', showingBilingual:'已显示双语对照。'});
 Object.assign(messages.en, {displayMode:'Page display', displayBilingual:'Bilingual', displayOriginal:'Original', displayError:'Could not change the page display. Refresh the page and try again.', showingOriginal:'Showing original text; translations are hidden.', showingBilingual:'Showing the bilingual page.'});

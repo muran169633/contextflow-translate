@@ -41,7 +41,7 @@ function fixture() {
   return {start, first, paragraph, paragraphs, requests, events, changed, flush, finish, listener, getObserver:()=>observer, getToast:()=>toast, timers};
 }
 
-test('展开回复和滚动后自动翻译新内容，不重复翻译已处理段落', async () => {
+test('展开回复和加载屏幕外内容后自动翻译，不重复翻译已处理段落', async () => {
   const f=fixture(); f.start();
   f.finish(f.requests[0]); await tick();
   const reply=f.paragraph('Expanded reply.'); f.paragraphs.push(reply); f.changed(reply); f.flush();
@@ -52,11 +52,11 @@ test('展开回复和滚动后自动翻译新内容，不重复翻译已处理�
   f.changed(reply); f.flush();
   assert.equal(f.requests.length, 2);
   const below=f.paragraph('Scrolled comment.', false); f.paragraphs.push(below); f.changed(below); f.flush();
-  assert.equal(f.requests.length, 2);
-  below.visible=true; f.events.get('scroll')(); f.flush();
   assert.equal(f.requests.length, 3);
   f.finish(f.requests[2]); await tick();
   assert.match(below.translated.children[1].textContent, /Scrolled comment/);
+  below.visible=true; f.events.get('scroll')(); f.flush();
+  assert.equal(f.requests.length, 3);
 });
 
 test('请求期间原文变化时丢弃旧结果并重新翻译', async () => {
@@ -141,4 +141,16 @@ test('屏幕内内容超过单批上限时继续处理后续批次', async () =>
   assert.equal(f.requests.length, 3);
   f.finish(f.requests[2]); await tick(); f.flush();
   assert.equal(f.requests.length, 3);
+});
+
+test('自动处理后台批次时点击停止，不再启动后续批次', async () => {
+  const f=fixture();
+  f.paragraphs.push(f.paragraph('Second comment.',false),f.paragraph('Third comment.',false));
+  f.listener({type:'CF_START',preferences:{engine:{provider:'mymemory',source:'en',target:'zh-CN'},maxBlocks:1,dynamic:true,messages:contentMessages('en')}},{},()=>{});
+  f.finish(f.requests[0]); await tick();
+  assert.equal(f.requests.length,2);
+  f.listener({type:'CF_STOP'},{},()=>{});
+  f.finish(f.requests[1]); await tick(); f.flush();
+  assert.equal(f.requests.length,2);
+  assert.equal(f.paragraphs[2].translated,undefined);
 });

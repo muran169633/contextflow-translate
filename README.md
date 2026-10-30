@@ -56,7 +56,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 5. Select **MyMemory · free** or **Google Translate · no key (unofficial)**, choose the source and target languages, and click **Translate page**. On first use, allow access to the selected service. Google web also offers automatic source-language detection; MyMemory requires an explicit source language.
 6. Alternatively select **Your AI model** and open **Settings**. Choose an API type: **OpenAI-compatible** for any provider exposing `chat/completions`, **Google Gemini API**, or **Anthropic Claude API**. Enter the model ID and its provider's API key; for compatible services also enter the base URL. Save, then return to the page. **Save & test API** sends a short test and may incur a provider charge.
 7. Look for translations underneath the original paragraphs and progress in the bottom-right corner. Use **Stop**, **Remove translations**, or **Retry** as needed.
-8. Dynamic translation is enabled by default: after starting, newly expanded or scrolled-into-view content is sent to the selected provider. It may consume quota or incur charges. Turn it off in Settings for manual translation, or use **Stop** / **Remove translations** to end monitoring on the current page. **Translate new or unfinished content** remains available.
+8. Starting translation processes loaded content in batches, initially up to 300 blocks per page or content frame; visible blocks are prioritized. Dynamic translation is enabled by default: newly loaded content is processed while this initial budget remains, and new visible or expanded content can also be translated afterward. This may consume quota or incur charges. Turn dynamic translation off in Settings to handle later changes manually, or use **Stop** / **Remove translations** to end monitoring on the current page. **Translate new or unfinished content** remains available after the initial limit.
 
 ### Quick translation
 
@@ -174,10 +174,15 @@ After updating the extension, reload it from the browser's extension management
 page and refresh the webpage before starting a new translation. Each run and
 its retries use the provider and language pair selected when the run started;
 after switching providers, click **Translate page** again to start a new run.
-The paragraph limit per batch is configurable in Settings; when reached, the
-extension warns that some content remains. With dynamic translation enabled,
-subsequent scrolling or page changes can send further batches. Longer paragraphs are split into
-bounded requests and combined for display.
+The paragraph limit per batch is configurable in Settings (default 50). The
+extension automatically continues through already loaded content, up to 300
+blocks initially per page or content frame, then warns if content remains.
+The **Stop** button ends scheduling, and **Translate new or unfinished content**
+can process another bounded run. With dynamic translation enabled, newly
+loaded content can also be processed within the remaining initial budget; later
+visible or expanded content can send further requests. Content not yet loaded,
+collapsed, or not recognized by the extractor may still be missed. Longer
+paragraphs are split into bounded requests and combined for display.
 
 If the browser reports “Only permissions specified in the manifest may be
 requested”, the extension may still be using an older loaded manifest. Open
@@ -285,9 +290,10 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 ## Known limitations
 
 - Ordinary article-like webpages only. Chrome/Edge internal pages, browser-owned PDF viewers, scanned images and embedded video subtitles are not supported.
-- Translates at most 150 content blocks per batch (default 50). When dynamic
-  translation is enabled, visible new or changed text is translated on scroll
-  or page changes until stopped; nonstandard site layouts may still be missed.
+- Translates at most 150 content blocks per batch (default 50), automatically
+  continuing loaded content up to 300 blocks per page or frame for the initial
+  run. Dynamic translation can process later visible changes; nonstandard
+  layouts and unloaded content may still be missed.
 - Complex page layouts can still render overlays imperfectly; text extraction may select unwanted items or miss nonstandard blocks.
 - Translation quality depends on the configured model, prompt, glossary and source text. **No benchmark has established superiority to any other extension**.
 - The second-pass review can help but cannot guarantee correctness and uses more tokens.

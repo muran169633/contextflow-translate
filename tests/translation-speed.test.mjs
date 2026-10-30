@@ -33,7 +33,11 @@ test('长页面段落上限优先包含屏幕内内容并立即开始翻译', as
   finish(fixture.pending[0]);
   await tick();
   assert.match(fixture.paragraphs[9].translated.children[1].textContent, /Paragraph 9/);
-  assert.match(fixture.getToast().textContent, /remaining content was not translated/);
+  assert.equal(fixture.pending.length,2);
+  finish(fixture.pending[1]); await tick();
+  assert.equal(fixture.pending.length,3);
+  finish(fixture.pending[2]); await tick();
+  assert.match(fixture.getToast().textContent,/12 translated, 0 failed/);
 });
 
 test('Google 网页批量按 UTF-8 字节数限长，并保持最多三个批次并发', async () => {

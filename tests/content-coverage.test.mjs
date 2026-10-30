@@ -67,24 +67,33 @@ test('展开或加载新评论后只翻译新增段落，保留已有译文', as
   assert.equal(page.rendered.length, 2);
 });
 
-test('达到段落上限时明确提示还有内容未翻译', async () => {
+test('超过单批上限时自动处理已加载内容，不需要滚动或手动继续', async () => {
   const page = makePage(['First paragraph.', 'Second paragraph.']);
   let result;
   page.listener({type: 'CF_START', preferences: {maxBlocks: 1, messages: contentMessages('zh-CN'), engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}}}, {}, value => { result = value; });
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(result.found, 1);
   assert.equal(result.truncated, true);
-  assert.match(page.getToast().textContent, /其余内容未翻译/);
-  page.listener({type: 'CF_CONTINUE', preferences: {maxBlocks: 1, messages: contentMessages('zh-CN'), engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}}}, {}, value => { result = value; });
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(result.started, true);
-  assert.equal(result.found, 1);
   assert.equal(page.requests.length, 2);
   assert.equal(page.requests[1].entries[0].text, 'Second paragraph.');
   assert.equal(page.rendered.length, 2);
+  assert.match(page.getToast().textContent, /成功 2 段/);
   page.listener({type: 'CF_CONTINUE', preferences: {maxBlocks: 1, messages: contentMessages('zh-CN'), engine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}}}, {}, value => { result = value; });
   assert.equal(result.started, false);
   assert.match(page.getToast().textContent, /没有发现新增或未完成/);
+});
+
+test('自动处理达到总量上限后停止并提示，失败段落不会无限重试', async () => {
+  const texts=Array.from({length:301},(_,i)=>`Paragraph ${i} contains meaningful text.`);
+  const page=makePage(texts, message => message.entries[0].text.includes('Paragraph 5 ')
+    ? {ok:false, error:'temporary failure'}
+    : {ok:true,translations:Object.fromEntries(message.entries.map(entry=>[entry.id,'译文']))});
+  page.listener({type:'CF_START',preferences:{maxBlocks:50,messages:contentMessages('zh-CN'),engine:{provider:'mymemory',source:'en',target:'zh-CN'}}},{},()=>{});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(page.requests.length,300);
+  assert.equal(page.requests.filter(request=>request.entries[0].text==='Paragraph 5 contains meaningful text.').length,1);
+  assert.match(page.getToast().textContent,/失败 1 段/);
+  assert.match(page.getToast().textContent,/其余内容未翻译/);
 });
 
 test('列表项中的旧翻译或错误提示不会混入再次翻译的原文', async () => {

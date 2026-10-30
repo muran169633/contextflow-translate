@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Continue through already loaded content in bounded batches without requiring
+  scrolling, prioritizing the viewport and limiting the initial run to 300
+  blocks per page or content frame. Keep Stop and explicit continuation.
+- Place translations below horizontal flex rows to avoid squeezing discussion
+  titles into a narrow vertical column.
 - Detect an outdated loaded Kaggle permission manifest and explain how to
   reload the extension when the browser rejects a permission request.
 - Sent Google web chunks of long paragraphs concurrently and reused identical

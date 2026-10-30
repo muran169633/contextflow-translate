@@ -3,9 +3,10 @@
   globalThis.__contextFlowInstalled = true;
 
   const ROOT_CLASS = "cf-translation";
+  const MAX_INITIAL_BLOCKS = 300;
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", documentTitle: "", viewport: null, truncated: false, dynamic: false, dynamicDirty: false, maxBlocks: 50, displayMode: "bilingual"};
+  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", documentTitle: "", viewport: null, truncated: false, initialRemaining: 0, dynamic: false, dynamicDirty: false, maxBlocks: 50, displayMode: "bilingual"};
   let observer, dynamicTimer, viewportTimer;
   let quickControl, quickTranslateButton, quickCloseButton;
   let quickPosition = null;
@@ -295,7 +296,14 @@
     if (["LI", "TD", "TH", "DD", "DT"].includes(source.tagName)) {
       source.appendChild(translation);
     } else {
-      source.insertAdjacentElement("afterend", translation);
+      // 横向 flex 容器会把译文当成并列项目，导致标题被挤成竖排。
+      let anchor = source;
+      while (anchor.parentElement && anchor.parentElement !== document.body) {
+        const parentStyle = getComputedStyle(anchor.parentElement);
+        if (!["flex", "inline-flex"].includes(parentStyle.display) || String(parentStyle.flexDirection || "row").startsWith("column")) break;
+        anchor = anchor.parentElement;
+      }
+      anchor.insertAdjacentElement("afterend", translation);
     }
   }
 
@@ -375,19 +383,18 @@
       const previous = state.items.filter(item => item.element.isConnected);
       const previousByElement = new Map(previous.map(item => [item.element, item]));
       const unchanged = new Set(previous.filter(item => sourceText(item.element) === item.text).map(item => item.element));
-      const {items} = getParagraphs(state.maxBlocks, unchanged);
-      const entries = items.filter(item => item.visible);
+      const background = state.initialRemaining > 0;
+      const {items, truncated} = getParagraphs(background ? Math.min(state.maxBlocks, state.initialRemaining) : state.maxBlocks, unchanged);
+      const entries = background ? items : items.filter(item => item.visible);
       if (!entries.length) return;
       const replaced = new Set(entries.map(item => item.element));
       for (const item of entries) previousByElement.get(item.element)?.translatedNode?.remove();
       state.items = [...previous.filter(item => !replaced.has(item.element)), ...entries];
       state.running = true;
-      state.done = 0;
-      state.failed = 0;
-      state.failureReason = "";
-      state.total = entries.length;
-      state.truncated = false;
-      if (entries.length === state.maxBlocks) state.dynamicDirty = true;
+      state.total += entries.length;
+      if (background) state.initialRemaining -= entries.length;
+      state.truncated = background && truncated;
+      if (!background && entries.length === state.maxBlocks) state.dynamicDirty = true;
       const token = state.token;
       void processParagraphs(entries, token).catch(error => {
         if (state.token === token) {
@@ -471,7 +478,7 @@
       index += count;
     }
     let next = 0;
-    showToast(uiText("progressParallel", {done: 0, total: items.length, failed: 0}));
+    showToast(uiText("progressParallel", {done: state.done, total: state.total, failed: state.failed}));
     async function worker() {
       while (!state.stop && state.token === token) {
         const job = jobs[next];
@@ -506,7 +513,7 @@
             showToast(uiText("progressFailed", {done: state.done, failed: state.failed, error: state.failureReason}), "warn");
           }
         }
-        if (!state.stop && state.token === token) showToast(uiText("progressParallel", {done: state.done, total: items.length, failed: state.failed}));
+        if (!state.stop && state.token === token) showToast(uiText("progressParallel", {done: state.done, total: state.total, failed: state.failed}));
       }
     }
     await Promise.all(Array.from({length: Math.min(concurrency, jobs.length)}, () => worker()));
@@ -562,6 +569,25 @@
       stopDynamic();
       showToast(uiText(state.failureReason ? "progressFailed" : "progressStopped", {done: state.done, failed: state.failed, error: state.failureReason}), "warn");
     } else {
+      if (state.truncated && state.initialRemaining > 0) {
+        const previous = state.items.filter(item => item.element.isConnected);
+        // 已尝试过的段落（包括失败段落）不会在同一次自动处理时重复请求。
+        const unchanged = new Set(previous.filter(item => sourceText(item.element) === item.text).map(item => item.element));
+        const {items: nextItems, truncated} = getParagraphs(Math.min(state.maxBlocks, state.initialRemaining), unchanged);
+        if (nextItems.length) {
+          const replaced = new Set(nextItems.map(item => item.element));
+          const previousByElement = new Map(previous.map(item => [item.element, item]));
+          for (const item of nextItems) item.translatedNode = previousByElement.get(item.element)?.translatedNode;
+          state.items = [...previous.filter(item => !replaced.has(item.element)), ...nextItems];
+          state.initialRemaining -= nextItems.length;
+          state.total += nextItems.length;
+          state.truncated = truncated;
+          state.running = true;
+          await processParagraphs(nextItems, token);
+          return;
+        }
+        state.truncated = false;
+      }
       const limitNote = state.truncated ? ` ${uiText("limitWarning", {limit: state.total})}` : "";
       showToast(uiText("progressDone", {done: state.done, failed: state.failed}) + limitNote, state.failed || state.truncated ? "warn" : "done");
       if (state.dynamicDirty) onDynamicChange();
@@ -590,10 +616,10 @@
     const {items: entries, truncated} = getParagraphs(state.maxBlocks, completedElements);
     for (const item of entries) item.translatedNode = previousByElement.get(item.element)?.translatedNode;
     state.truncated = truncated;
+    state.initialRemaining = MAX_INITIAL_BLOCKS - entries.length;
     state.total = entries.length;
     state.items = continuing ? [...completed, ...entries] : entries;
     if (preferences?.dynamic === true) startDynamic();
-    if (state.dynamic && truncated && entries.length && entries.every(item => item.visible)) state.dynamicDirty = true;
     if (!entries.length) {
       state.running = false;
       showToast(uiText(continuing ? "noNewParagraphs" : "noParagraphs"), "warn");
@@ -612,7 +638,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 20, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 21, running: state.running, count: state.total, displayMode: state.displayMode});
     } else if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       sendResponse({ok: true, viewport: notebookViewport()});
     } else if (message?.type === "CF_SET_VIEWPORT") {
