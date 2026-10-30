@@ -10,7 +10,7 @@ globalThis.chrome={runtime:{id:'test',onMessage:{addListener:fn=>{listener=fn;}}
   permissions:{contains:async ({origins,permissions})=>permissions?.includes('webNavigation')?allowed:origins[0]==='https://translate.googleapis.com/*'},
   webNavigation:{getAllFrames:async()=>[{frameId:0,url:tab.url},{frameId:6,url:'https://www.kaggleusercontent.com/kf/123/__results__.html'}]},
   tabs:{sendMessage:async (_tab,message,options)=>{const frame=options?.frameId||0;messages.push({message,frame});
-    if(message.type==='CF_PING') {if(frame===6&&!installed)throw Error('not installed');return {ok:true,protocol:17,displayMode};}
+    if(message.type==='CF_PING') {if(frame===6&&!installed)throw Error('not installed');return {ok:true,protocol:18,displayMode};}
     if(message.type==='CF_QUICK_SHOW')return {ok:true};
     if(message.type==='CF_QUICK_NOTICE')return {ok:true};
     if(message.type==='CF_SET_DISPLAY'){if(frame===0)displayMode=message.mode;return {ok:true};}

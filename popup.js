@@ -7,6 +7,7 @@ import {GOOGLE_TRANSLATE_ORIGIN} from "./google-translate.mjs";
 import {GOOGLE_WEB_ORIGIN} from "./google-web-translate.mjs";
 import {YOUDAO_ORIGIN} from "./youdao-translate.mjs";
 import {MICROSOFT_ORIGIN} from "./microsoft-translate.mjs";
+import {LIBRE_LOCAL_ORIGIN} from "./libre-local.mjs";
 import {KAGGLE_NOTEBOOK_ORIGIN, isKaggleNotebook, sendToKaggleNotebook} from "./kaggle-frames.mjs";
 const $ = id => document.getElementById(id);
 let busy = false;
@@ -49,6 +50,7 @@ function renderEngine() {
   $("google-web-info").hidden = engine.provider !== "google-web";
   $("youdao-info").hidden = engine.provider !== "youdao";
   $("microsoft-info").hidden = engine.provider !== "microsoft";
+  $("libre-info").hidden = engine.provider !== "libre-local";
   $("autoSourceInfo").hidden = engine.source !== "auto" || !supportsAutoSource(engine.provider);
   $("ai-controls").hidden = engine.provider !== "ai";
   $("swapLanguages").title = t(engine.source === "auto" ? "swapAutoUnavailable" : "swapLanguages");
@@ -105,7 +107,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}, {frameId: 0}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 17) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 18) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -151,13 +153,13 @@ async function runAction(kind) {
   let permission;
   const notebook = isKaggleNotebook(activeTabUrl);
   let origin;
-  if (["CF_START", "CF_CONTINUE"].includes(kind) && ["mymemory", "google-web", "google", "youdao", "microsoft"].includes(selectedEngine.provider)) {
+  if (["CF_START", "CF_CONTINUE"].includes(kind) && ["mymemory", "google-web", "google", "youdao", "microsoft", "libre-local"].includes(selectedEngine.provider)) {
     if (selectedEngine.source === selectedEngine.target) { status(t("sameLanguage"), "error"); return; }
     if (selectedEngine.provider === "google" && !googleKeyPresent) { status(t("googleNeedKey"), "error"); return; }
     if (selectedEngine.provider === "youdao" && !youdaoKeysPresent) { status(t("youdaoNeedKey"), "error"); return; }
     if (selectedEngine.provider === "microsoft" && !microsoftKeyPresent) { status(t("microsoftNeedKey"), "error"); return; }
     // Called synchronously from the click handler to preserve the user gesture.
-    origin = selectedEngine.provider === "microsoft" ? MICROSOFT_ORIGIN : selectedEngine.provider === "youdao" ? YOUDAO_ORIGIN : selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : selectedEngine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
+    origin = selectedEngine.provider === "libre-local" ? LIBRE_LOCAL_ORIGIN : selectedEngine.provider === "microsoft" ? MICROSOFT_ORIGIN : selectedEngine.provider === "youdao" ? YOUDAO_ORIGIN : selectedEngine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : selectedEngine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : FREE_ORIGIN;
   }
   if (["CF_START", "CF_CONTINUE"].includes(kind) && (origin || notebook)) {
     status(t("starting"), "info");
@@ -172,11 +174,11 @@ async function runAction(kind) {
       if (!permission) status(t("starting"), "info");
       const config = await settings();
       if (selectedEngine.provider === "ai" && !config.model.trim()) throw new Error(t("needModel"));
-      if (permission && !await permission) throw new Error(t(notebook ? "kagglePermission" : selectedEngine.provider === "mymemory" ? "permissionFree" : selectedEngine.provider === "youdao" ? "permissionYoudao" : selectedEngine.provider === "microsoft" ? "permissionMicrosoft" : "permissionGoogle"));
+      if (permission && !await permission) throw new Error(t(notebook ? "kagglePermission" : selectedEngine.provider === "libre-local" ? "permissionLibre" : selectedEngine.provider === "mymemory" ? "permissionFree" : selectedEngine.provider === "youdao" ? "permissionYoudao" : selectedEngine.provider === "microsoft" ? "permissionMicrosoft" : "permissionGoogle"));
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 17) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 18) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;

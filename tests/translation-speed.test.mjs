@@ -89,3 +89,20 @@ test('AI 仍逐批发送并优先翻译屏幕内批次，保留前后上下文',
   await tick();
   assert.match(fixture.getToast().textContent, /12 translated, 0 failed/);
 });
+
+test('Google 批次文本错误只拆分该批次，其他段落继续翻译', async () => {
+  const fixture=page('google-web', 4, []);
+  await tick();
+  fixture.pending[0].resolve({ok:false,fatal:false,error:'HTTP 400'});
+  await tick();
+  assert.equal(fixture.pending.length,2);
+  assert.equal(fixture.pending[1].message.entries.length,1);
+  fixture.pending[1].resolve({ok:false,fatal:false,error:'Invalid paragraph'});
+  await tick();
+  finish(fixture.pending[2]); await tick();
+  finish(fixture.pending[3]); await tick();
+  finish(fixture.pending[4]);
+  await tick();
+  assert.match(fixture.getToast().textContent,/3 translated, 1 failed/);
+  assert.match(fixture.paragraphs[1].translated.children[1].textContent,/Paragraph 1/);
+});

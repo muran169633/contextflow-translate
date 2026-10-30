@@ -13,12 +13,12 @@ globalThis.chrome = {
   runtime: {id: 'test', onMessage: {addListener: fn => { runtimeListener = fn; }}},
   commands: {onCommand: {addListener: fn => { commandListener = fn; }}},
   storage: {local: {setAccessLevel: async () => {}, get: async key => ({[key]: saved[key]}), set: async data => Object.assign(saved, data)}},
-  permissions: {contains: async ({origins}) => permitted && ['https://api.mymemory.translated.net/*', 'https://translate.googleapis.com/*', 'https://openapi.youdao.com/*', 'https://api.cognitive.microsofttranslator.com/*'].includes(origins[0])},
+  permissions: {contains: async ({origins}) => permitted && ['https://api.mymemory.translated.net/*', 'https://translate.googleapis.com/*', 'https://openapi.youdao.com/*', 'https://api.cognitive.microsofttranslator.com/*', 'http://127.0.0.1/*'].includes(origins[0])},
   tabs: {sendMessage: async (tabId, message) => {
     messages.push({tabId, ...message});
     if (message.type === 'CF_PING') {
       if (!installed) throw new Error('No receiver');
-      return {ok: true, protocol: 17, running, displayMode};
+      return {ok: true, protocol: 18, running, displayMode};
     }
     if (message.type === 'CF_QUICK_SHOW' || message.type === 'CF_QUICK_NOTICE') return {ok: true};
     if (message.type === 'CF_START') return {ok: true, started: true, found: 1};
@@ -116,4 +116,13 @@ test('原文和双语快捷键只切换显示，不发起翻译', async () => {
   await tick();
   assert.equal(displayMode, 'bilingual');
   assert.equal(messages.filter(message => message.type === 'CF_START').length, 0);
+});
+
+test('快捷翻译支持已授权的本机 LibreTranslate', async () => {
+  permitted = true;
+  saved.translationEngine = {provider:'libre-local',source:'auto',target:'zh-CN'};
+  messages.length = 0;
+  commandListener('quick-translate', {id:7,url:'https://example.com/'});
+  await tick();
+  assert.equal(messages.find(message => message.type === 'CF_START').preferences.engine.provider, 'libre-local');
 });

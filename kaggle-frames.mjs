@@ -33,7 +33,7 @@ export async function sendToKaggleNotebook(tabId, message, inject = false) {
         ping = await chrome.tabs.sendMessage(tabId, {type:'CF_PING'}, options);
       }
       if (!ping?.ok) return {status:'unavailable'};
-      if (ping.protocol !== 17) return {status:'outdated'};
+      if (ping.protocol !== 18) return {status:'outdated'};
       const result = await chrome.tabs.sendMessage(tabId, message, options);
       return result?.ok ? {status:'ok', ...result} : {status:'unavailable'};
     } catch { return {status:'unavailable'}; }

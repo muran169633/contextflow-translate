@@ -4,6 +4,12 @@ import {splitSegments} from './free-translate.mjs';
 export const GOOGLE_WEB_ORIGIN = 'https://translate.googleapis.com/*';
 const MAX_BATCH_BYTES = 1200;
 
+function paragraphError(message) {
+  const error = new Error(message);
+  error.fatal = false;
+  return error;
+}
+
 async function requestGoogle(text, engine, fetcher) {
   const url = new URL('https://translate.googleapis.com/translate_a/single');
   url.searchParams.set('client', 'gtx');
@@ -16,15 +22,19 @@ async function requestGoogle(text, engine, fetcher) {
   catch (error) {
     throw new Error(`Google Translate connection failed: ${String(error?.message || error).slice(0, 160)}. Check network access; this unofficial endpoint may be unavailable.`);
   }
-  if (!response.ok) throw new Error(`Google Translate HTTP ${response.status}; the unofficial endpoint may be unavailable or rate-limited.`);
+  if (!response.ok) {
+    const message = `Google Translate HTTP ${response.status}; the unofficial endpoint may be unavailable or rate-limited.`;
+    if ([400, 413, 414, 422].includes(response.status)) throw paragraphError(message);
+    throw new Error(message);
+  }
   let data;
   try { data = await response.json(); }
-  catch { throw new Error('Google Translate returned invalid data; the unofficial endpoint may have changed.'); }
+  catch { throw paragraphError('Google Translate returned invalid data; the unofficial endpoint may have changed.'); }
   if (!Array.isArray(data?.[0]) || !data[0].length || data[0].some(part => !Array.isArray(part) || typeof part[0] !== 'string')) {
-    throw new Error('Google Translate returned incomplete data; the unofficial endpoint may have changed.');
+    throw paragraphError('Google Translate returned incomplete data; the unofficial endpoint may have changed.');
   }
   const translated = data[0].map(part => part[0]).join('');
-  if (!translated.trim()) throw new Error('Google Translate returned an empty translation.');
+  if (!translated.trim()) throw paragraphError('Google Translate returned an empty translation.');
   const original = data[0].every(part => typeof part[1] === 'string') ? data[0].map(part => part[1]).join('') : null;
   return {translated, original};
 }

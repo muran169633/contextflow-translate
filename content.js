@@ -466,8 +466,9 @@
     showToast(uiText("progressParallel", {done: 0, total: items.length, failed: 0}));
     async function worker() {
       while (!state.stop && state.token === token) {
-        const job = jobs[next++];
+        const job = jobs[next];
         if (!job) return;
+        next++;
         const group = job.map(entry => entry.item);
         try {
           const first = job[0].index;
@@ -481,6 +482,11 @@
           }
         } catch (error) {
           if (state.stop || state.token !== token) return;
+          // 批量中某段文本异常时逐段重试，避免无关段落一起失败。
+          if (!error.fatal && job.length > 1) {
+            jobs.splice(next, 0, ...job.map(entry => [entry]));
+            continue;
+          }
           for (const item of group) {
             if (!currentParagraph(item)) continue;
             renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
@@ -500,7 +506,7 @@
 
   async function processParagraphs(items, token) {
     const provider = state.engine?.provider;
-    const individualService = ["mymemory", "youdao"].includes(provider) || (provider === "google-web" && state.engine?.source === "auto");
+    const individualService = ["mymemory", "youdao", "libre-local"].includes(provider) || (provider === "google-web" && state.engine?.source === "auto");
     const webService = provider === "google-web" && !individualService;
     const batchService = ["google", "microsoft"].includes(provider);
     if (individualService || batchService || webService) await processMachineParagraphs(items, token, individualService ? 1 : 5, individualService || webService ? 3 : 2, webService ? 1200 : Infinity);
@@ -597,7 +603,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 17, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 18, running: state.running, count: state.total, displayMode: state.displayMode});
     } else if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       sendResponse({ok: true, viewport: notebookViewport()});
     } else if (message?.type === "CF_SET_VIEWPORT") {

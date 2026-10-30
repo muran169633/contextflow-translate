@@ -1,6 +1,6 @@
 # ContextFlow Translate 0.1.0
 
-A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Youdao Cloud Translation, Microsoft Translator, Google Cloud Translation, or your own AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, local LibreTranslate, Youdao Cloud Translation, Microsoft Translator, Google Cloud Translation, or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
@@ -12,6 +12,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
   Availability and quality depend on the language pair and the provider.
 - An optional Google Translate web endpoint that needs no API key. This is an
   unofficial integration and can be rate-limited, changed, or unavailable.
+- Local LibreTranslate needs no API key, but requires a separately installed and
+  running local server with the needed language models.
 - Youdao Cloud text translation with an application ID and secret; trial credit
   may be available and subsequent use may be charged.
 - Microsoft Azure Translator with a resource key and optional region; the F0
@@ -32,7 +34,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 - Faithful, technical, academic or natural translation styles.
 - Optional second AI review, aimed at preserving negations, numbers, units and qualifiers.
 - Per-paragraph retry; stop translation; remove all overlays.
-- Optional 7-day local cache (up to 200 batched results).
+- Optional 7-day local cache (up to 200 entries). Machine-translation results
+  are cached per paragraph and reused even when subsequent batches differ.
 - On-demand `activeTab` access: dynamic monitoring starts only after translation
   is requested on the page, and stops on Stop or Remove translations.
 - Interface language selection: Simplified Chinese, English, Japanese,
@@ -79,7 +82,7 @@ translation can continue when the original view is selected.
 
 ### 自动检测与语言交换
 
-Google 免密钥、Google Cloud、微软和有道模式支持在源语言中选择**自动检测**；
+Google 免密钥、Google Cloud、微软、有道及 LibreTranslate 本机模式支持在源语言中选择**自动检测**；
 MyMemory 需要指定源语言，从自动检测切换到 MyMemory 时会提示并选用英语，
 请按需更改。短句的识别结果可能不准确。Google 免密钥模式在自动检测时逐段
 发送请求，避免不同语言的段落被当成同一种语言，速度可能比指定源语言更慢。
@@ -87,6 +90,20 @@ MyMemory 需要指定源语言，从自动检测切换到 MyMemory 时会提示�
 
 源语言和目标语言之间的交换按钮可快速交换已选语言；使用自动检测时，请先
 选定具体的源语言，再交换。
+
+### 免费本机翻译（LibreTranslate）
+
+这是需要自行部署的开源翻译服务，不是免配置的在线接口。按照
+[LibreTranslate 安装文档](https://docs.libretranslate.com/guides/installation/)
+在本机安装并启动服务，绑定 `127.0.0.1:5000`，并安装需要的语言模型。例如，
+已安装 LibreTranslate 后可用 `libretranslate --host 127.0.0.1 --port 5000 --load-only en,zh`
+启动英语和中文模型；首次下载模型需要网络、磁盘空间和等待时间。模型及可用
+语言以本机服务实际情况为准。插件不会替你安装或启动该服务。
+
+然后在弹窗选择 **LibreTranslate · 本机免费**，首次翻译时允许访问本机地址。
+服务运行在与浏览器相同的电脑上，网页文字发送到该本机服务，无需 API 密钥。
+速度和翻译质量取决于机器性能及安装的模型；当前仅将简体中文映射到 `zh`，
+不支持单独选择繁体中文。服务未启动或模型缺失时，扩展会显示错误。
 
 MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
 
@@ -217,6 +234,8 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
   Cloud; the separate API key is stored locally in the browser profile.
 - When using the unofficial Google Translate web endpoint, selected text is sent
   to Google in request URLs, which can be logged by servers and network tools.
+- When using local LibreTranslate, selected text is sent to the service at
+  `127.0.0.1:5000` on the browser's machine.
 - When using Youdao, selected passages are sent to Youdao Cloud. The application
   ID and secret are stored locally; requests are signed in the background.
 - When using Microsoft Translator, selected passages are sent to Microsoft; the

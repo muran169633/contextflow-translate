@@ -44,3 +44,28 @@ test('自动源语言经后台请求保留为 auto', async () => {
   assert.equal(result.ok,true);
   assert.equal(url.searchParams.get('sl'),'auto');
 });
+
+test('段落分组改变时只请求缓存中没有的段落', async () => {
+  store.settings.cache=true;
+  const queries=[];
+  globalThis.fetch=async value=>{
+    const query=new URL(value).searchParams.get('q'); queries.push(query);
+    return {ok:true,json:async()=>[[[query.split('\n\n').map(text=>`译:${text}`).join('\n\n'),query]]]};
+  };
+  const run=entries=>new Promise(resolve=>listener({type:'CF_TRANSLATE',entries,context:{},engine:store.translationEngine},{id:'test',tab:{id:1}},resolve));
+  const first=await run([{id:'cf-1',text:'Alpha unique.'},{id:'cf-2',text:'Beta unique.'}]);
+  const second=await run([{id:'cf-3',text:'Beta unique.'},{id:'cf-4',text:'Gamma unique.'}]);
+  assert.equal(first.ok,true);
+  assert.equal(second.ok,true);
+  assert.deepEqual(queries,['Alpha unique.\n\nBeta unique.','Gamma unique.']);
+  assert.deepEqual(second.translations,{'cf-3':'译:Beta unique.','cf-4':'译:Gamma unique.'});
+});
+
+test('Google 文本错误可恢复，限流错误停止后续请求', async () => {
+  store.settings.cache=false;
+  const run=()=>new Promise(resolve=>listener({type:'CF_TRANSLATE',entries:[{id:'cf-1',text:'Invalid input.'}],context:{},engine:store.translationEngine},{id:'test',tab:{id:1}},resolve));
+  globalThis.fetch=async()=>({ok:false,status:400});
+  assert.equal((await run()).fatal,false);
+  globalThis.fetch=async()=>({ok:false,status:429});
+  assert.equal((await run()).fatal,true);
+});

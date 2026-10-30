@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a free, self-hosted LibreTranslate option for a local server on port
+  5000; it requires the service and language models to be installed separately.
+- Cache machine-translation results per paragraph, allowing reuse across
+  different batches; split recoverable failed batches into individual requests.
 - Added automatic source-language detection for supported translation services,
   with per-paragraph Google web detection and a warning for short text.
 - Added source/target language swapping and an original/bilingual display
