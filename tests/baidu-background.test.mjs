@@ -8,7 +8,7 @@ const saved={settings:{model:'',cache:false,baiduAppId:'id',baiduAppSecret:'secr
 globalThis.chrome={runtime:{id:'test',onMessage:{addListener:fn=>{listener=fn;}}},commands:{onCommand:{addListener:fn=>{command=fn;}}},
   storage:{local:{setAccessLevel:async()=>{},get:async key=>({[key]:saved[key]}),set:async data=>Object.assign(saved,data)}},
   permissions:{contains:async({origins})=>allowed && origins[0]==='https://fanyi-api.baidu.com/*'},
-  tabs:{sendMessage:async(_id,message)=>{calls.push(message);if(message.type==='CF_PING')return {ok:true,protocol:21};return {ok:true,started:true,found:1};}},
+  tabs:{sendMessage:async(_id,message)=>{calls.push(message);if(message.type==='CF_PING')return {ok:true,protocol:22};return {ok:true,started:true,found:1};}},
   scripting:{}};
 globalThis.fetch=async(url,{body})=>{calls.push({type:'fetch',url,form:body});return {ok:true,json:async()=>({trans_result:[{src:'Hello.',dst:'你好。'}]})};};
 await import('../background.js?baidu-test');

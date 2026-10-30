@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 test('切换服务时隔离密钥并保留已有兼容接口配置', async () => {
   const elements = new Map();
-  for (const id of ['uiLanguage', 'message', 'aiProvider', 'endpoint', 'endpointHelp', 'model', 'apiKey', 'googleTranslateKey', 'saveGoogleKey', 'youdaoAppKey', 'youdaoAppSecret', 'saveYoudaoKey', 'baiduAppId', 'baiduAppSecret', 'saveBaiduKey', 'microsoftKey', 'microsoftRegion', 'saveMicrosoftKey', 'source', 'target', 'style', 'glossary', 'maxBlocks', 'review', 'cache', 'dynamic', 'save', 'test', 'clearCache']) {
+  for (const id of ['uiLanguage', 'message', 'aiProvider', 'endpoint', 'endpointHelp', 'model', 'apiKey', 'googleTranslateKey', 'saveGoogleKey', 'mymemoryEmail', 'saveMyMemoryEmail', 'youdaoAppKey', 'youdaoAppSecret', 'saveYoudaoKey', 'baiduAppId', 'baiduAppSecret', 'saveBaiduKey', 'microsoftKey', 'microsoftRegion', 'saveMicrosoftKey', 'source', 'target', 'style', 'glossary', 'maxBlocks', 'review', 'cache', 'dynamic', 'save', 'test', 'clearCache']) {
     elements.set(id, {value: '', checked: false, disabled: false, textContent: '', className: '', addEventListener(_event, fn) { this.handler = fn; }});
   }
   const store = {settings: {endpoint: 'https://gateway.example/v1', model: 'old-model', apiKey: 'old-key', target: 'Chinese', source: 'auto', style: 'faithful', cache: true, maxBlocks: 50}};
@@ -45,6 +45,13 @@ test('切换服务时隔离密钥并保留已有兼容接口配置', async () =>
     await elements.get('saveBaiduKey').handler();
     assert.equal(store.settings.baiduAppId, 'baidu-id');
     assert.equal(store.settings.baiduAppSecret, 'baidu-secret');
+    elements.get('mymemoryEmail').value = 'not-an-email';
+    await elements.get('saveMyMemoryEmail').handler();
+    assert.match(elements.get('message').textContent, /有效的邮箱/);
+    assert.equal(store.settings.mymemoryEmail, '');
+    elements.get('mymemoryEmail').value = 'reader@example.com';
+    await elements.get('saveMyMemoryEmail').handler();
+    assert.equal(store.settings.mymemoryEmail, 'reader@example.com');
     assert.equal(store.settings.googleTranslateKey, 'google-key');
     elements.get('microsoftKey').value = 'ms-key';
     elements.get('microsoftRegion').value = 'eastus';
@@ -54,6 +61,10 @@ test('切换服务时隔离密钥并保留已有兼容接口配置', async () =>
     assert.equal(store.settings.youdaoAppSecret, 'youdao-secret');
     await elements.get('save').handler();
     assert.equal(store.settings.baiduAppSecret, 'baidu-secret');
+    assert.equal(store.settings.mymemoryEmail, 'reader@example.com');
+    elements.get('mymemoryEmail').value = '';
+    await elements.get('saveMyMemoryEmail').handler();
+    assert.equal(store.settings.mymemoryEmail, '');
   } finally {
     delete globalThis.document;
     delete globalThis.navigator;
@@ -63,7 +74,7 @@ test('切换服务时隔离密钥并保留已有兼容接口配置', async () =>
 
 test('未配置 AI 模型也能关闭自动翻译，不请求额外域名权限', async () => {
   const elements = new Map();
-  for (const id of ['uiLanguage','message','aiProvider','endpoint','endpointHelp','model','apiKey','googleTranslateKey','saveGoogleKey','youdaoAppKey','youdaoAppSecret','saveYoudaoKey', 'baiduAppId', 'baiduAppSecret', 'saveBaiduKey','microsoftKey','microsoftRegion','saveMicrosoftKey','source','target','style','glossary','maxBlocks','review','cache','dynamic','save','test','clearCache']) {
+  for (const id of ['uiLanguage','message','aiProvider','endpoint','endpointHelp','model','apiKey','googleTranslateKey','saveGoogleKey', 'mymemoryEmail', 'saveMyMemoryEmail','youdaoAppKey','youdaoAppSecret','saveYoudaoKey', 'baiduAppId', 'baiduAppSecret', 'saveBaiduKey','microsoftKey','microsoftRegion','saveMicrosoftKey','source','target','style','glossary','maxBlocks','review','cache','dynamic','save','test','clearCache']) {
     elements.set(id, {value:'', checked:false, textContent:'', addEventListener(_event, fn) {this.handler=fn;}});
   }
   const store = {settings:{model:'', dynamic:true}};

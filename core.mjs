@@ -1,6 +1,7 @@
 /** Pure, testable translation primitives. No network or Chrome APIs here. */
 export const DEFAULT_SETTINGS = Object.freeze({
   aiProvider: "compatible",
+  mymemoryEmail: "",
   googleTranslateKey: "",
   youdaoAppKey: "",
   youdaoAppSecret: "",

@@ -2,6 +2,7 @@ export const FREE_ORIGIN = 'https://api.mymemory.translated.net/*';
 export const DEFAULT_ENGINE = Object.freeze({provider: 'mymemory', source: 'en', target: 'zh-CN'});
 export const LANGUAGE_CODES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'ar', 'hi', 'id', 'vi', 'th', 'tr', 'nl', 'pl', 'uk', 'sv', 'el', 'he', 'fa', 'bn', 'ms', 'ro', 'cs', 'da', 'fi']);
 export const supportsAutoSource = provider => ['google-web', 'google', 'youdao', 'microsoft', 'libre-local', 'baidu', 'ai'].includes(provider);
+export const isValidMyMemoryEmail = value => !value || (value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value));
 
 export function normalizeEngine(engine, hasModel = false) {
   const input = engine && typeof engine === 'object' ? engine : {};
@@ -46,8 +47,10 @@ export function decodeEntities(text) {
   });
 }
 
-export async function translateFree(entries, engine, fetcher = fetch) {
+export async function translateFree(entries, engine, fetcher = fetch, {email = ''} = {}) {
   if (engine.source === engine.target) throw new Error('Choose different source and target languages.');
+  const contact = String(email || '').trim();
+  if (!isValidMyMemoryEmail(contact)) throw new Error('Invalid MyMemory email. Check the address in Settings.');
   const translations = {};
   for (const entry of entries) {
     const results = [];
@@ -56,6 +59,7 @@ export async function translateFree(entries, engine, fetcher = fetch) {
       const url = new URL('https://api.mymemory.translated.net/get');
       url.searchParams.set('q', segment);
       url.searchParams.set('langpair', `${engine.source}|${engine.target}`);
+      if (contact) url.searchParams.set('de', contact);
       const response = await fetcher(url.href, {signal: AbortSignal.timeout(27000)});
       if (!response.ok) throw new Error(`MyMemory HTTP ${response.status}`);
       const data = await response.json();

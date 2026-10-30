@@ -2,6 +2,7 @@ import {DEFAULT_SETTINGS} from "./core.mjs";
 import {MODEL_BASE_URLS, modelPermission, providerBase, providerName} from "./model-adapters.mjs";
 import {setupLanguage, translate} from "./ui-language.mjs";
 import {localizeError} from "./i18n.mjs";
+import {isValidMyMemoryEmail} from "./free-translate.mjs";
 let language = "en";
 const t = (key, values) => translate(language, key, values);
 const $ = id => document.getElementById(id);
@@ -30,10 +31,13 @@ function status(text, kind = "info") {
 }
 function settingsFromForm() {
   const maxBlocks = Number.parseInt($("maxBlocks").value, 10);
+  const mymemoryEmail = $("mymemoryEmail").value.trim();
+  if (!isValidMyMemoryEmail(mymemoryEmail)) throw new Error(t("freeEmailInvalid"));
   rememberConnection();
   return {
     aiProvider: currentProvider,
     connections,
+    mymemoryEmail,
     googleTranslateKey: $("googleTranslateKey").value.trim(),
     youdaoAppKey: $("youdaoAppKey").value.trim(),
     youdaoAppSecret: $("youdaoAppSecret").value.trim(),
@@ -61,7 +65,7 @@ async function restore() {
   connections = {...(s.connections || {})};
   connections[currentProvider] = {endpoint: s.endpoint, model: s.model, apiKey: s.apiKey};
   showConnection(currentProvider);
-  for (const name of ["googleTranslateKey", "youdaoAppKey", "youdaoAppSecret", "baiduAppId", "baiduAppSecret", "microsoftKey", "microsoftRegion", "source", "target", "style", "glossary", "maxBlocks"]) {
+  for (const name of ["mymemoryEmail", "googleTranslateKey", "youdaoAppKey", "youdaoAppSecret", "baiduAppId", "baiduAppSecret", "microsoftKey", "microsoftRegion", "source", "target", "style", "glossary", "maxBlocks"]) {
     $(name).value = s[name];
   }
   $("review").checked = !!s.review;
@@ -103,6 +107,15 @@ async function saveAndMaybeTest(test) {
 }
 $("save").addEventListener("click", () => saveAndMaybeTest(false));
 $("test").addEventListener("click", () => saveAndMaybeTest(true));
+$("saveMyMemoryEmail").addEventListener("click", async () => {
+  try {
+    const email = $("mymemoryEmail").value.trim();
+    if (!isValidMyMemoryEmail(email)) throw new Error(t("freeEmailInvalid"));
+    const data = await chrome.storage.local.get("settings");
+    await chrome.storage.local.set({settings: {...(data.settings || {}), mymemoryEmail: email}});
+    status(t(email ? "freeEmailSaved" : "freeEmailCleared"), "success");
+  } catch (error) { status(String(error?.message || error), "error"); }
+});
 $("saveGoogleKey").addEventListener("click", async () => {
   try {
     const data = await chrome.storage.local.get("settings");

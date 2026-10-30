@@ -3,14 +3,16 @@ import assert from 'node:assert/strict';
 
 let listener;
 let fetchCount = 0;
+let lastUrl;
 const store = {translationEngine: {provider: 'mymemory', source: 'en', target: 'zh-CN'}, settings: {model: '', cache: true}};
 globalThis.chrome = {
   runtime: {id: 'test', onMessage: {addListener: callback => { listener = callback; }}},
-  permissions: {contains: async ({origins}) => origins[0] === 'https://api.mymemory.translated.net/*'},
+  permissions: {contains: async ({origins}) => ['https://api.mymemory.translated.net/*','https://translate.googleapis.com/*'].includes(origins[0])},
   storage: {local: {setAccessLevel: async () => {}, get: async key => ({[key]: structuredClone(store[key])}), set: async data => Object.assign(store, structuredClone(data))}}
 };
 globalThis.fetch = async url => {
   fetchCount++;
+  lastUrl = new URL(url);
   assert.equal(new URL(url).searchParams.get('langpair'), 'en|zh-CN');
   return {ok: true, json: async () => ({responseStatus: 200, responseData: {translatedText: '无需模型的翻译'}})};
 };
@@ -53,4 +55,26 @@ test('每次运行的服务选择不受后台旧配置影响', async () => {
   const invalid = await run({provider: 'unknown', source: 'en', target: 'zh-CN'});
   assert.equal(invalid.ok, false);
   assert.match(invalid.error, /Invalid translation engine/);
+});
+
+test('后台仅在用户设置邮箱后发送 MyMemory 联系参数，清除后恢复匿名', async () => {
+  store.settings.mymemoryEmail='reader@example.com';
+  const send=()=>new Promise(resolve=>listener({type:'CF_TRANSLATE',entries:[{id:'cf-1',text:'Email setting check.'}],context:{},engine:{provider:'mymemory',source:'en',target:'zh-CN'},force:true},{id:'test',tab:{id:1}},resolve));
+  assert.equal((await send()).ok,true);
+  assert.equal(lastUrl.searchParams.get('de'),'reader@example.com');
+  store.settings.mymemoryEmail='';
+  assert.equal((await send()).ok,true);
+  assert.equal(lastUrl.searchParams.has('de'),false);
+});
+
+test('MyMemory 邮箱不会发送给其他翻译服务', async () => {
+  store.settings.mymemoryEmail='reader@example.com';
+  let requested;
+  globalThis.fetch=async url=>{requested=new URL(url);return {ok:true,json:async()=>[[['译文',requested.searchParams.get('q')]]]};};
+  const engine={provider:'google-web',source:'en',target:'zh-CN'};
+  const result=await new Promise(resolve=>listener({type:'CF_TRANSLATE',entries:[{id:'cf-1',text:'Other provider check.'}],engine,force:true},{id:'test',tab:{id:1}},resolve));
+  assert.equal(result.ok,true);
+  assert.equal(requested.hostname,'translate.googleapis.com');
+  assert.equal(requested.searchParams.has('de'),false);
+  assert.equal(requested.href.includes('reader'),false);
 });

@@ -15,6 +15,7 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
 - Bilingual paragraph translation, with the original webpage preserved. Switch
   between bilingual and original views in the popup without retranslating.
 - A no-account MyMemory mode with 30 selectable source and target languages.
+  An optional contact email can qualify for a higher provider allowance.
   Availability and quality depend on the language pair and the provider.
 - An optional Google Translate web endpoint that needs no API key. This is an
   unofficial integration and can be rate-limited, changed, or unavailable.
@@ -123,7 +124,7 @@ MyMemory 需要指定源语言，从自动检测切换到 MyMemory 时会提示�
 速度和翻译质量取决于机器性能及安装的模型；当前仅将简体中文映射到 `zh`，
 不支持单独选择繁体中文。服务未启动或模型缺失时，扩展会显示错误。
 
-MyMemory's anonymous service is currently limited to [5,000 characters per day](https://mymemory.translated.net/doc/usagelimits.php), with a [500-byte request limit](https://mymemory.translated.net/doc/spec.php); long paragraphs are split into segments. Quotas, available language pairs and translation quality are controlled by MyMemory. The free mode does not use context, the glossary, translation style or the second-pass review. It is neither Google Translate nor Youdao.
+According to [MyMemory's usage limits](https://mymemory.translated.net/doc/usagelimits.php), anonymous use is limited to 5,000 characters per day; providing a valid contact email can increase this to 50,000 characters per day. The actual quota and availability are controlled by MyMemory. In Settings, optionally save a contact email; leave it blank or clear it to use anonymous requests. When configured, the email is stored locally and sent to MyMemory in each request URL, where servers and network tools may log it. Source text is also sent to MyMemory. Its [terms and privacy policy](https://mymemory.translated.net/terms-and-conditions) describe retention and sharing of submitted text; do not use it for confidential content. Requests have a [500-byte limit](https://mymemory.translated.net/doc/spec.php), so long paragraphs are split into segments. This mode does not use AI context, the glossary, translation style or the second-pass review.
 
 The optional Google Translate web endpoint does not require an API key, but
 it is not a documented or supported Google Cloud API. Its availability, rate
@@ -266,6 +267,9 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 
 - Nothing is translated or uploaded until you click **Translate page**.
 - When using MyMemory, each selected passage is sent to MyMemory; its [terms and privacy policy](https://mymemory.translated.net/terms-and-conditions) state that submitted segments may be retained long term and shared with service partners. Do not use it for confidential or private content. The free mode does not send the title, surrounding context or glossary.
+- If an optional MyMemory contact email is configured, it is stored locally and
+  sent to MyMemory in the URL of each request, which may be logged by servers
+  and network tools. Leave it blank or clear it to make anonymous requests.
 - When using Google Cloud Translation, selected passages are sent to Google
   Cloud; the separate API key is stored locally in the browser profile.
 - When using the unofficial Google Translate web endpoint, selected text is sent

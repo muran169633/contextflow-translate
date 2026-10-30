@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added an optional MyMemory contact email for the provider's higher stated
+  free allowance, with disclosure and anonymous mode when left blank.
 - Continue through already loaded content in bounded batches without requiring
   scrolling, prioritizing the viewport and limiting the initial run to 300
   blocks per page or content frame. Keep Stop and explicit continuation.

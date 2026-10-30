@@ -32,12 +32,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0}); } catch {}
-  if (ping?.ok && ping.protocol !== 21) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 22) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0});
-    if (!ping?.ok || ping.protocol !== 21) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 22) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}}, {frameId: 0});
   return ping;
@@ -258,7 +258,7 @@ async function translationWithCache(entries, context, force = false, forceAi = f
   if (["mymemory", "google-web", "google", "youdao", "microsoft", "libre-local", "baidu"].includes(engine.provider)) {
     try {
       if (!await chrome.permissions.contains({origins: [url]})) throw new Error("Translation provider host access is not granted.");
-      translations = engine.provider === "baidu" ? await translateBaidu(pendingEntries, engine, settings.baiduAppId, settings.baiduAppSecret) : engine.provider === "libre-local" ? await translateLibreLocal(pendingEntries, engine) : engine.provider === "microsoft" ? await translateMicrosoft(pendingEntries, engine, settings.microsoftKey, settings.microsoftRegion) : engine.provider === "youdao" ? await translateYoudao(pendingEntries, engine, settings.youdaoAppKey, settings.youdaoAppSecret) : engine.provider === "google" ? await translateGoogle(pendingEntries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWebShared(pendingEntries, engine, pendingKeys, force) : await translateFree(pendingEntries, engine);
+      translations = engine.provider === "baidu" ? await translateBaidu(pendingEntries, engine, settings.baiduAppId, settings.baiduAppSecret) : engine.provider === "libre-local" ? await translateLibreLocal(pendingEntries, engine) : engine.provider === "microsoft" ? await translateMicrosoft(pendingEntries, engine, settings.microsoftKey, settings.microsoftRegion) : engine.provider === "youdao" ? await translateYoudao(pendingEntries, engine, settings.youdaoAppKey, settings.youdaoAppSecret) : engine.provider === "google" ? await translateGoogle(pendingEntries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWebShared(pendingEntries, engine, pendingKeys, force) : await translateFree(pendingEntries, engine, fetch, {email: settings.mymemoryEmail});
     } catch (error) {
       if (error.fatal !== false) error.fatal = true;
       throw error;
@@ -289,7 +289,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 21};
+      return {protocol: 22};
     }
     if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       if (!sender.tab || sender.frameId !== 0 || !isKaggleNotebook(sender.tab.url)) throw new Error("Invalid notebook viewport sender.");

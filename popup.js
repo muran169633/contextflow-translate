@@ -88,6 +88,7 @@ async function settings() {
 
 async function updateSettingsPreview() {
   const data = await settings();
+  $("freeNote").textContent = t(String(data.mymemoryEmail || "").trim() ? "freeEmailActive" : "freeNote");
   googleKeyPresent = !!String(data.googleTranslateKey || "").trim();
   microsoftKeyPresent = !!String(data.microsoftKey || "").trim();
   youdaoKeysPresent = !!String(data.youdaoAppKey || "").trim() && !!String(data.youdaoAppSecret || "").trim();
@@ -111,7 +112,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}, {frameId: 0}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 21) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 22) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -190,7 +191,7 @@ async function runAction(kind) {
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 21) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 22) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;
