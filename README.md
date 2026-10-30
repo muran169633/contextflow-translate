@@ -126,6 +126,9 @@ Google in the request URL and does not apply AI context, glossary or review.
 The extension will report failures rather than silently switch services.
 Short paragraphs may be combined in a request; the extension checks paragraph
 boundaries and retries them individually when it cannot align the response.
+Those fallback paragraphs and segments of a long paragraph can run concurrently,
+with at most three Google web requests in flight across the extension. This
+reduces waiting without reducing the number of requests or provider usage.
 For short paragraphs with inline `code`, KaTeX, MathJax or MathML, the extension
 attempts to preserve those contents and reports an error if their markers are
 lost. For quantum-circuit pages with English explicitly selected as the source
@@ -263,11 +266,11 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
 - Translations are inserted using `textContent`, never parsed as HTML, to avoid untrusted model output injecting page markup or scripts.
 - Use HTTPS for remote endpoints. Local HTTP is permitted only for `localhost` / `127.0.0.1`.
 - Avoid feeding confidential, medical, financial, or private enterprise content to unknown API relays. The optional cache stores translated passages locally for seven days.
-- Stopping prevents new paragraphs from starting, but already-sent paragraphs
-  may continue making requests for their remaining segments and consume quota
+- Stopping prevents new jobs from starting, but an already-sent batch may
+  continue individual fallback requests or remaining segments and consume quota
   or incur charges. MyMemory and Youdao may have three paragraphs in flight;
-  the unofficial Google web endpoint may have three batches in flight, and
-  Microsoft and Google Cloud may have two batches in flight.
+  the unofficial Google web endpoint has at most three HTTP requests in flight
+  across pages, and Microsoft and Google Cloud may have two batches per page.
 
 ## Known limitations
 

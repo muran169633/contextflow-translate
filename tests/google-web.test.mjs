@@ -61,3 +61,85 @@ test('原文无法核对时不能仅凭译文的分隔符映射段落', async ()
   assert.equal(seen.length,3);
   assert.deepEqual(result,{'cf-1':'First.','cf-2':'Second.'});
 });
+
+test('批量边界不匹配时最多三个单段请求并行，结果按原段映射', async () => {
+  const items=Array.from({length:5},(_,i)=>({id:`cf-${i}`,text:`paragraph ${i}`}));
+  const pending=[];
+  const run=translateGoogleWeb(items,{source:'en',target:'zh-CN'},async url=>{
+    const text=new URL(url).searchParams.get('q');
+    if (text.includes('\n')) return {ok:true,json:async()=>[[['边界丢失',text]]]};
+    return await new Promise(resolve=>pending.push({text,resolve}));
+  });
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,3);
+  const finish=item=>item.resolve({ok:true,json:async()=>[[[`译:${item.text}`,item.text]]]});
+  finish(pending[1]); await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,4);
+  finish(pending[0]); finish(pending[2]); await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,5);
+  finish(pending[3]); finish(pending[4]);
+  const result=await run;
+  for (const item of items) assert.equal(result[item.id],`译:${item.text}`);
+});
+
+test('多个页面共用 Google 请求并发上限，失败后不继续启动该批请求', async () => {
+  const pending=[];
+  let active=0, maximum=0;
+  const fetcher=url=>new Promise(resolve=>{
+    active++; maximum=Math.max(maximum,active);
+    const text=new URL(url).searchParams.get('q');
+    pending.push({text,finish(response){active--;resolve(response);}});
+  });
+  const engine={source:'auto',target:'zh-CN'};
+  const runs=Array.from({length:4},(_,i)=>translateGoogleWeb([{id:`cf-${i}`,text:`hello ${i}`}],engine,fetcher));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,3);
+  pending[1].finish({ok:true,json:async()=>[[['你好',pending[1].text]]]});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,4);
+  for(const index of [0,2,3]) pending[index].finish({ok:true,json:async()=>[[['你好',pending[index].text]]]});
+  await Promise.all(runs);
+  assert.equal(maximum,3);
+
+  pending.length=0; active=0;
+  const items=Array.from({length:6},(_,i)=>({id:`cf-${i}`,text:`text ${i}`}));
+  const failed=translateGoogleWeb(items,engine,fetcher);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,3);
+  pending[0].finish({ok:false,status:429});
+  await new Promise(resolve=>setImmediate(resolve));
+  for(const index of [1,2]) pending[index].finish({ok:true,json:async()=>[[['你好',pending[index].text]]]});
+  await assert.rejects(failed,/429/);
+  assert.equal(pending.length,3);
+});
+
+test('长段落分片并发返回后仍按原始顺序拼接', async () => {
+  const pending=[];
+  const text='甲'.repeat(400)+'乙'.repeat(400)+'丙'.repeat(400);
+  const run=translateGoogleWeb([{id:'cf-1',text}],{source:'zh-CN',target:'en'},url=>new Promise(resolve=>pending.push({url:new URL(url),resolve})));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,3);
+  const result=(index,value)=>pending[index].resolve({ok:true,json:async()=>[[[value,pending[index].url.searchParams.get('q')]]]});
+  result(2,'third'); result(0,'first'); result(1,'second');
+  assert.equal((await run)['cf-1'],'first second third');
+});
+
+test('共享并发槽中的请求遇到限流后，不启动同批尚在排队的分片', async () => {
+  const pending=[];
+  const fetcher=url=>new Promise(resolve=>pending.push({url,resolve}));
+  const engine={source:'auto',target:'zh-CN'};
+  const other=translateGoogleWeb([{id:'cf-100',text:'Other page'}],engine,fetcher);
+  await new Promise(resolve=>setImmediate(resolve));
+  const failed=translateGoogleWeb([{id:'cf-1',text:'One'},{id:'cf-2',text:'Two'},{id:'cf-3',text:'Three'}],engine,fetcher);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,3);
+  pending[1].resolve({ok:false,status:429});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(pending.length,3);
+  for (const i of [0,2]) {
+    const text=new URL(pending[i].url).searchParams.get('q');
+    pending[i].resolve({ok:true,json:async()=>[[['译文',text]]]});
+  }
+  await assert.rejects(failed,/429/);
+  await other;
+});

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reduced Google web fallback latency by concurrently translating unmatched
+  paragraphs and long-paragraph segments, with a shared three-request limit.
 - Added Baidu's general text translation API with user-provided credentials,
   source detection, bounded batches and shared standard-tier request pacing.
 - Added a free, self-hosted LibreTranslate option for a local server on port
