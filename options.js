@@ -37,6 +37,8 @@ function settingsFromForm() {
     googleTranslateKey: $("googleTranslateKey").value.trim(),
     youdaoAppKey: $("youdaoAppKey").value.trim(),
     youdaoAppSecret: $("youdaoAppSecret").value.trim(),
+    baiduAppId: $("baiduAppId").value.trim(),
+    baiduAppSecret: $("baiduAppSecret").value.trim(),
     microsoftKey: $("microsoftKey").value.trim(),
     microsoftRegion: $("microsoftRegion").value.trim(),
     endpoint: $("endpoint").value.trim(),
@@ -59,7 +61,7 @@ async function restore() {
   connections = {...(s.connections || {})};
   connections[currentProvider] = {endpoint: s.endpoint, model: s.model, apiKey: s.apiKey};
   showConnection(currentProvider);
-  for (const name of ["googleTranslateKey", "youdaoAppKey", "youdaoAppSecret", "microsoftKey", "microsoftRegion", "source", "target", "style", "glossary", "maxBlocks"]) {
+  for (const name of ["googleTranslateKey", "youdaoAppKey", "youdaoAppSecret", "baiduAppId", "baiduAppSecret", "microsoftKey", "microsoftRegion", "source", "target", "style", "glossary", "maxBlocks"]) {
     $(name).value = s[name];
   }
   $("review").checked = !!s.review;
@@ -120,6 +122,13 @@ $("saveMicrosoftKey").addEventListener("click", async () => {
     const data = await chrome.storage.local.get("settings");
     await chrome.storage.local.set({settings: {...(data.settings || {}), microsoftKey: $("microsoftKey").value.trim(), microsoftRegion: $("microsoftRegion").value.trim()}});
     status(t("microsoftKeySaved"), "success");
+  } catch (error) { status(String(error?.message || error), "error"); }
+});
+$("saveBaiduKey").addEventListener("click", async () => {
+  try {
+    const data = await chrome.storage.local.get("settings");
+    await chrome.storage.local.set({settings: {...(data.settings || {}), baiduAppId: $("baiduAppId").value.trim(), baiduAppSecret: $("baiduAppSecret").value.trim()}});
+    status(t("baiduKeySaved"), "success");
   } catch (error) { status(String(error?.message || error), "error"); }
 });
 $("aiProvider").addEventListener("change", () => {

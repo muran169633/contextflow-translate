@@ -7,10 +7,10 @@ const store={settings:{model:'',dynamic:true},translationEngine:{provider:'googl
 globalThis.chrome={runtime:{id:'test',onMessage:{addListener:fn=>{listener=fn;}}},
   commands:{onCommand:{addListener:fn=>{commandListener=fn;}}},
   storage:{local:{setAccessLevel:async()=>{},get:async key=>({[key]:store[key]}),set:async data=>Object.assign(store,data)}},
-  permissions:{contains:async ({origins,permissions})=>permissions?.includes('webNavigation')?allowed:origins[0]==='https://translate.googleapis.com/*'},
+  permissions:{contains:async ({origins,permissions})=>permissions?.includes('webNavigation')?allowed:['https://translate.googleapis.com/*','https://fanyi-api.baidu.com/*'].includes(origins[0])},
   webNavigation:{getAllFrames:async()=>[{frameId:0,url:tab.url},{frameId:6,url:'https://www.kaggleusercontent.com/kf/123/__results__.html'}]},
   tabs:{sendMessage:async (_tab,message,options)=>{const frame=options?.frameId||0;messages.push({message,frame});
-    if(message.type==='CF_PING') {if(frame===6&&!installed)throw Error('not installed');return {ok:true,protocol:18,displayMode};}
+    if(message.type==='CF_PING') {if(frame===6&&!installed)throw Error('not installed');return {ok:true,protocol:19,displayMode};}
     if(message.type==='CF_QUICK_SHOW')return {ok:true};
     if(message.type==='CF_QUICK_NOTICE')return {ok:true};
     if(message.type==='CF_SET_DISPLAY'){if(frame===0)displayMode=message.mode;return {ok:true};}
@@ -59,4 +59,16 @@ test('正文框架权限不足时快捷键提示未能同步', async()=>{
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(messages.filter(item=>item.message.type==='CF_SET_DISPLAY').length,1);
   assert.ok(messages.some(item=>item.message.type==='CF_QUICK_NOTICE' && item.message.kind!=='info'));
+});
+
+test('百度翻译覆盖 Kaggle 外层及 Notebook 正文且不泄露凭据', async()=>{
+  allowed=true; installed=true; messages.length=0;
+  store.settings.baiduAppId='id'; store.settings.baiduAppSecret='secret';
+  store.translationEngine={provider:'baidu',source:'en',target:'zh-CN'};
+  const result=await call({type:'CF_QUICK_START'});
+  assert.equal(result.ok,true);
+  const starts=messages.filter(item=>item.message.type==='CF_START');
+  assert.deepEqual(starts.map(item=>item.frame),[0,6]);
+  assert.ok(starts.every(item=>item.message.preferences.engine.provider==='baidu'));
+  assert.equal(JSON.stringify(starts).includes('secret'),false);
 });

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 test('Kaggle 弹窗请求内容域权限并分别启动主页面和正文框架', async () => {
   const nodes=new Map();
-  for (const id of ['message','model','detail','start','continue','stop','clear','copy-discussion','settings','uiLanguage','provider','freeSource','freeTarget','free-controls','ai-controls','mymemory-info','google-info','google-web-info','youdao-info','microsoft-info','dynamicInfo','mode-bilingual','mode-original', 'kaggleInfo', 'autoSourceInfo', 'swapLanguages', 'libre-info']) {
+  for (const id of ['message','model','detail','start','continue','stop','clear','copy-discussion','settings','uiLanguage','provider','freeSource','freeTarget','free-controls','ai-controls','mymemory-info','google-info','google-web-info','youdao-info','microsoft-info','dynamicInfo','mode-bilingual','mode-original', 'kaggleInfo', 'autoSourceInfo', 'swapLanguages', 'libre-info', 'baidu-info']) {
     nodes.set(id,{value:'',textContent:'',className:'',setAttribute(key,value){this[key]=value;},replaceChildren(){},addEventListener(_type,fn){this.handler=fn;}});
   }
   const store={settings:{model:''},translationEngine:{provider:'google-web',source:'en',target:'zh-CN'}};
@@ -16,13 +16,13 @@ test('Kaggle 弹窗请求内容域权限并分别启动主页面和正文框架'
     webNavigation:{getAllFrames:async()=>frameAvailable?[{frameId:0,url:tab.url},{frameId:5,url:'https://www.kaggleusercontent.com/kf/123/__results__.html'},{frameId:9,url:'https://unrelated.example/frame'}]:[{frameId:0,url:tab.url}]},
     tabs:{query:async()=>[tab],sendMessage:async (_id,message,options)=>{
       const frame=options?.frameId ?? 0;sent.push({type:message.type,frame});
-      if(message.type==='CF_PING') {if(frame===5&&!installed)throw Error('not injected');return {ok:true,protocol:18,displayMode:'bilingual'};}
+      if(message.type==='CF_PING') {if(frame===5&&!installed)throw Error('not injected');return {ok:true,protocol:19,displayMode:'bilingual'};}
       if(message.type==='CF_QUICK_SHOW')return {ok:true};
       if(message.type==='CF_NOTEBOOK_VIEWPORT')return {ok:true,viewport:{top:400,bottom:1000}};
       if(message.type==='CF_START') {if(frame===5)childPreferences=message.preferences;return {ok:true,started:true,found:frame===5?4:1};}
       if(message.type==='CF_STOP') return {ok:true};
       throw Error('unexpected message');
-    }},scripting:{insertCSS:async()=>{},executeScript:async()=>{installed=true;}},runtime:{sendMessage:async()=>({ok:true,protocol:18})}};
+    }},scripting:{insertCSS:async()=>{},executeScript:async()=>{installed=true;}},runtime:{sendMessage:async()=>({ok:true,protocol:19})}};
   try {
     await import('../popup.js?kaggle-test');await new Promise(resolve=>setImmediate(resolve));
     nodes.get('start').handler();

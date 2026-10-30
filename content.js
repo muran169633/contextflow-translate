@@ -506,10 +506,11 @@
 
   async function processParagraphs(items, token) {
     const provider = state.engine?.provider;
-    const individualService = ["mymemory", "youdao", "libre-local"].includes(provider) || (provider === "google-web" && state.engine?.source === "auto");
+    const individualService = ["mymemory", "youdao", "libre-local"].includes(provider) || (["google-web", "baidu"].includes(provider) && state.engine?.source === "auto");
     const webService = provider === "google-web" && !individualService;
+    const baiduService = provider === "baidu" && !individualService;
     const batchService = ["google", "microsoft"].includes(provider);
-    if (individualService || batchService || webService) await processMachineParagraphs(items, token, individualService ? 1 : 5, individualService || webService ? 3 : 2, webService ? 1200 : Infinity);
+    if (individualService || batchService || webService || baiduService) await processMachineParagraphs(items, token, individualService ? 1 : 5, provider === "baidu" ? 1 : individualService || webService ? 3 : 2, webService ? 1200 : baiduService ? 900 : Infinity);
     else {
       const jobs = [];
       for (let index = 0; index < items.length;) {
@@ -603,7 +604,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 18, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 19, running: state.running, count: state.total, displayMode: state.displayMode});
     } else if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       sendResponse({ok: true, viewport: notebookViewport()});
     } else if (message?.type === "CF_SET_VIEWPORT") {

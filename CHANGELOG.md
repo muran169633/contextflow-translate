@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added Baidu's general text translation API with user-provided credentials,
+  source detection, bounded batches and shared standard-tier request pacing.
 - Added a free, self-hosted LibreTranslate option for a local server on port
   5000; it requires the service and language models to be installed separately.
 - Cache machine-translation results per paragraph, allowing reuse across

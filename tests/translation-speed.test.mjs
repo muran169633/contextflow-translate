@@ -6,7 +6,7 @@ import {contentMessages} from '../i18n.mjs';
 
 const script = await readFile(new URL('../content.js', import.meta.url), 'utf8');
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function page(provider, count, visibleIndexes, maxBlocks = count, paragraphText = i => `Paragraph ${i} has words.`) {
+function page(provider, count, visibleIndexes, maxBlocks = count, paragraphText = i => `Paragraph ${i} has words.`, source = 'en') {
   const pending = [];
   let listener, toast;
   const paragraphs = Array.from({length:count}, (_, i) => ({tagName:'P', textContent:paragraphText(i), isConnected:true,
@@ -18,7 +18,7 @@ function page(provider, count, visibleIndexes, maxBlocks = count, paragraphText 
   const chrome = {runtime:{onMessage:{addListener:fn => {listener = fn;}}, sendMessage:message => new Promise(resolve => pending.push({message, resolve}))}};
   vm.runInNewContext(script, {document, chrome, innerHeight:600, getComputedStyle:() => ({visibility:'visible', display:'block'})});
   let result;
-  listener({type:'CF_START', preferences:{engine:{provider, source:'en', target:'zh-CN'}, maxBlocks, messages:contentMessages('en')}}, {}, value => {result=value;});
+  listener({type:'CF_START', preferences:{engine:{provider, source, target:'zh-CN'}, maxBlocks, messages:contentMessages('en')}}, {}, value => {result=value;});
   return {pending, paragraphs, listener, result, getToast:() => toast};
 }
 function finish(job) {job.resolve({ok:true, translations:Object.fromEntries(job.message.entries.map(entry => [entry.id, `译文 ${entry.text}`]))});}
@@ -105,4 +105,26 @@ test('Google 批次文本错误只拆分该批次，其他段落继续翻译', a
   await tick();
   assert.match(fixture.getToast().textContent,/3 translated, 1 failed/);
   assert.match(fixture.paragraphs[1].translated.children[1].textContent,/Paragraph 1/);
+});
+
+test('百度按标准版限速串行批量处理，优先处理可见段落', async () => {
+  const fixture=page('baidu', 12, [8]);
+  await tick();
+  assert.equal(fixture.pending.length,1);
+  assert.equal(fixture.pending[0].message.entries.length,5);
+  assert.equal(fixture.pending[0].message.entries[0].text,'Paragraph 8 has words.');
+  finish(fixture.pending[0]); await tick();
+  assert.equal(fixture.pending.length,2);
+  finish(fixture.pending[1]); await tick();
+  finish(fixture.pending[2]); await tick();
+  assert.match(fixture.getToast().textContent,/12 translated, 0 failed/);
+});
+
+test('百度自动识别逐段发送，并在停止后不继续排队', async () => {
+  const fixture=page('baidu', 4, [], 4, i => `Paragraph ${i} has words.`, 'auto');
+  assert.equal(fixture.pending[0].message.entries.length,1);
+  fixture.listener({type:'CF_STOP'}, {}, () => {});
+  for (const job of fixture.pending.slice()) finish(job);
+  await tick();
+  assert.equal(fixture.pending.length,1);
 });

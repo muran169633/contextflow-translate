@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 test('选择 Google 服务后请求其域名权限，密钥不传给网页', async () => {
   const nodes = new Map();
-  for (const id of ['message', 'model', 'detail', 'start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info', 'google-web-info', 'youdao-info', 'microsoft-info', 'dynamicInfo', 'mode-bilingual', 'mode-original', 'kaggleInfo', 'autoSourceInfo', 'swapLanguages', 'libre-info']) {
+  for (const id of ['message', 'model', 'detail', 'start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings', 'uiLanguage', 'provider', 'freeSource', 'freeTarget', 'free-controls', 'ai-controls', 'mymemory-info', 'google-info', 'google-web-info', 'youdao-info', 'microsoft-info', 'dynamicInfo', 'mode-bilingual', 'mode-original', 'kaggleInfo', 'autoSourceInfo', 'swapLanguages', 'libre-info', 'baidu-info']) {
     nodes.set(id, {value: '', disabled: false, textContent: '', className: '', setAttribute(key, value) { this[key] = value; }, replaceChildren() {}, addEventListener(_type, fn) { this.handler = fn; }});
   }
   const buttons = ['start', 'continue', 'stop', 'clear', 'copy-discussion', 'settings'].map(id => nodes.get(id));
@@ -16,12 +16,12 @@ test('选择 Google 服务后请求其域名权限，密钥不传给网页', asy
     storage: {local: {get: async key => ({[key]: saved[key]}), set: async value => Object.assign(saved, value)}},
     permissions: {request: ({origins}) => { origin = origins[0]; return Promise.resolve(true); }},
     tabs: {query: async () => [{id: 1, url: 'https://example.com/article'}], sendMessage: async (_id, message) => {
-      if (message.type === 'CF_PING') return {ok: true, protocol: 18};
+      if (message.type === 'CF_PING') return {ok: true, protocol: 19};
       if (message.type === 'CF_QUICK_SHOW') return {ok: true};
       started = message;
       return {started: true, found: 1};
     }},
-    scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 18})}
+    scripting: {}, runtime: {sendMessage: async () => ({ok: true, protocol: 19})}
   };
   try {
     await import('../popup.js');

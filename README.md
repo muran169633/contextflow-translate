@@ -1,6 +1,6 @@
 # ContextFlow Translate 0.1.0
 
-A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, local LibreTranslate, Youdao Cloud Translation, Microsoft Translator, Google Cloud Translation, or your own AI provider.
+A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMemory, the unofficial Google Translate web endpoint, Baidu Translate, local LibreTranslate, Youdao Cloud Translation, Microsoft Translator, Google Cloud Translation, or your own AI provider.
 
 **This is an independently implemented MVP. It is not affiliated with Immersive Translate or SmartSub.**
 
@@ -14,6 +14,8 @@ A Chrome / Edge Manifest V3 bilingual webpage translation extension. Choose MyMe
   unofficial integration and can be rate-limited, changed, or unavailable.
 - Local LibreTranslate needs no API key, but requires a separately installed and
   running local server with the needed language models.
+- Baidu general text translation uses your own App ID and secret. The standard
+  and verified personal plans include monthly free allowances; overages can be charged.
 - Youdao Cloud text translation with an application ID and secret; trial credit
   may be available and subsequent use may be charged.
 - Microsoft Azure Translator with a resource key and optional region; the F0
@@ -82,7 +84,7 @@ translation can continue when the original view is selected.
 
 ### 自动检测与语言交换
 
-Google 免密钥、Google Cloud、微软、有道及 LibreTranslate 本机模式支持在源语言中选择**自动检测**；
+Google 免密钥、Google Cloud、微软、有道、百度及 LibreTranslate 本机模式支持在源语言中选择**自动检测**；
 MyMemory 需要指定源语言，从自动检测切换到 MyMemory 时会提示并选用英语，
 请按需更改。短句的识别结果可能不准确。Google 免密钥模式在自动检测时逐段
 发送请求，避免不同语言的段落被当成同一种语言，速度可能比指定源语言更慢。
@@ -90,6 +92,16 @@ MyMemory 需要指定源语言，从自动检测切换到 MyMemory 时会提示�
 
 源语言和目标语言之间的交换按钮可快速交换已选语言；使用自动检测时，请先
 选定具体的源语言，再交换。
+
+### 百度通用文本翻译
+
+1. 登录[百度翻译开放平台](https://fanyi-api.baidu.com/)，开通**通用文本翻译 API**，获取 App ID 和密钥。
+2. 在扩展的**设置**中填写并保存百度凭据。密钥存储在浏览器本地，未单独加密；请使用你愿意提供给扩展的凭据。
+3. 回到扩展弹窗，选择**百度翻译 · 通用文本 API**、源语言和目标语言，点击**翻译网页**并允许访问百度域名。
+
+按[百度当前定价](https://fanyi-api.baidu.com/product/112)，标准版每月免费 5 万字符，个人认证高级版每月免费 100 万字符；超过额度可能收费，请自行关注平台用量。标准版每秒最多一次、单次最多 1000 字符；扩展在后台按标准版限速，短段落可合并请求，并对照返回原文确保对应正确。源语言自动检测时逐段请求，因此可能更慢。
+
+动态翻译、手动重试，以及批量结果无法对齐时的逐段重试可能增加用量。请求发生前请确认账户额度。百度标准版和个人高级版支持常见语种，部分语种仅企业尊享版支持；返回错误时请核对账户和语言组合。当前不会自动切换其他服务。
 
 ### 免费本机翻译（LibreTranslate）
 
@@ -238,6 +250,8 @@ The tests cover URL validation, prompts, terminology parsing, structured output 
   `127.0.0.1:5000` on the browser's machine.
 - When using Youdao, selected passages are sent to Youdao Cloud. The application
   ID and secret are stored locally; requests are signed in the background.
+- When using Baidu, selected passages are sent to Baidu. The App ID and secret
+  are stored locally without separate encryption; requests are signed in the background.
 - When using Microsoft Translator, selected passages are sent to Microsoft; the
   resource key and region are stored locally.
 - When using AI mode, selected passages, document title, surrounding context, and glossary terms go to **your configured AI provider**.

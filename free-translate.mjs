@@ -1,11 +1,11 @@
 export const FREE_ORIGIN = 'https://api.mymemory.translated.net/*';
 export const DEFAULT_ENGINE = Object.freeze({provider: 'mymemory', source: 'en', target: 'zh-CN'});
 export const LANGUAGE_CODES = Object.freeze(['en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'ar', 'hi', 'id', 'vi', 'th', 'tr', 'nl', 'pl', 'uk', 'sv', 'el', 'he', 'fa', 'bn', 'ms', 'ro', 'cs', 'da', 'fi']);
-export const supportsAutoSource = provider => ['google-web', 'google', 'youdao', 'microsoft', 'libre-local', 'ai'].includes(provider);
+export const supportsAutoSource = provider => ['google-web', 'google', 'youdao', 'microsoft', 'libre-local', 'baidu', 'ai'].includes(provider);
 
 export function normalizeEngine(engine, hasModel = false) {
   const input = engine && typeof engine === 'object' ? engine : {};
-  const provider = ['mymemory', 'google-web', 'google', 'youdao', 'microsoft', 'libre-local', 'ai'].includes(input.provider) ? input.provider : (hasModel ? 'ai' : 'mymemory');
+  const provider = ['mymemory', 'google-web', 'google', 'youdao', 'microsoft', 'libre-local', 'baidu', 'ai'].includes(input.provider) ? input.provider : (hasModel ? 'ai' : 'mymemory');
   return {
     provider,
     source: LANGUAGE_CODES.includes(input.source) || (input.source === 'auto' && supportsAutoSource(provider)) ? input.source : DEFAULT_ENGINE.source,

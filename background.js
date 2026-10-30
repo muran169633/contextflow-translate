@@ -9,6 +9,7 @@ import {GOOGLE_WEB_ORIGIN, translateGoogleWeb} from "./google-web-translate.mjs"
 import {YOUDAO_ORIGIN, translateYoudao} from "./youdao-translate.mjs";
 import {MICROSOFT_ORIGIN, translateMicrosoft} from "./microsoft-translate.mjs";
 import {LIBRE_LOCAL_ORIGIN, translateLibreLocal} from "./libre-local.mjs";
+import {BAIDU_ORIGIN, translateBaidu} from "./baidu-translate.mjs";
 import {KAGGLE_NOTEBOOK_ORIGIN, isKaggleNotebook, sendToKaggleNotebook} from "./kaggle-frames.mjs";
 import {buildModelRequest, modelEndpoint, modelPermission, parseModelResponse, providerName} from "./model-adapters.mjs";
 import {contentMessages, resolveLanguage, translate} from "./i18n.mjs";
@@ -31,12 +32,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0}); } catch {}
-  if (ping?.ok && ping.protocol !== 18) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 19) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0});
-    if (!ping?.ok || ping.protocol !== 18) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 19) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}}, {frameId: 0});
   return ping;
@@ -58,7 +59,8 @@ async function quickTranslate(tab) {
     if (engine.provider === "google" && !String(settings.googleTranslateKey || "").trim()) throw new Error(translate(language, "googleNeedKey"));
     if (engine.provider === "youdao" && (!String(settings.youdaoAppKey || "").trim() || !String(settings.youdaoAppSecret || "").trim())) throw new Error(translate(language, "youdaoNeedKey"));
     if (engine.provider === "microsoft" && !String(settings.microsoftKey || "").trim()) throw new Error(translate(language, "microsoftNeedKey"));
-    const origin = engine.provider === "libre-local" ? LIBRE_LOCAL_ORIGIN : engine.provider === "microsoft" ? MICROSOFT_ORIGIN : engine.provider === "youdao" ? YOUDAO_ORIGIN : engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
+    if (engine.provider === "baidu" && (!String(settings.baiduAppId || "").trim() || !String(settings.baiduAppSecret || "").trim())) throw new Error(translate(language, "baiduNeedKey"));
+    const origin = engine.provider === "baidu" ? BAIDU_ORIGIN : engine.provider === "libre-local" ? LIBRE_LOCAL_ORIGIN : engine.provider === "microsoft" ? MICROSOFT_ORIGIN : engine.provider === "youdao" ? YOUDAO_ORIGIN : engine.provider === "mymemory" ? FREE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : modelPermission(settings);
     if (!await chrome.permissions.contains({origins: [origin]})) throw new Error(translate(language, "quickAuthorize"));
     if (isKaggleNotebook(tab.url) && !await chrome.permissions.contains({permissions: ["webNavigation"], origins: [KAGGLE_NOTEBOOK_ORIGIN]})) throw new Error(translate(language, "kagglePermission"));
     const message = {type: "CF_START", preferences: {engine, target: settings.target, documentTitle: tab.title || "", maxBlocks: settings.maxBlocks, dynamic: settings.dynamic, messages: contentMessages(language)}};
@@ -198,12 +200,12 @@ async function storeCache(keys, entries, translations, reviewed) {
 async function translationWithCache(entries, context, force = false, forceAi = false, requestedEngine = null) {
   const settings = await readSettings();
   const {translationEngine} = await chrome.storage.local.get("translationEngine");
-  if (requestedEngine && (!['mymemory', 'google-web', 'google', 'youdao', 'microsoft', 'libre-local', 'ai'].includes(requestedEngine.provider) || !(LANGUAGE_CODES.includes(requestedEngine.source) || (requestedEngine.source === 'auto' && supportsAutoSource(requestedEngine.provider))) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
+  if (requestedEngine && (!['mymemory', 'google-web', 'google', 'youdao', 'microsoft', 'libre-local', 'baidu', 'ai'].includes(requestedEngine.provider) || !(LANGUAGE_CODES.includes(requestedEngine.source) || (requestedEngine.source === 'auto' && supportsAutoSource(requestedEngine.provider))) || !LANGUAGE_CODES.includes(requestedEngine.target))) {
     throw new Error("Invalid translation engine selection.");
   }
   const engine = forceAi ? normalizeEngine({provider: "ai"}) : normalizeEngine(requestedEngine || translationEngine, !!String(settings.model || "").trim());
   if (engine.provider === "ai" && !String(settings.model || "").trim()) throw new Error("Configure a model and API endpoint in Settings first.");
-  const url = engine.provider === "ai" ? modelEndpoint(settings) : engine.provider === "libre-local" ? LIBRE_LOCAL_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "youdao" ? YOUDAO_ORIGIN : engine.provider === "microsoft" ? MICROSOFT_ORIGIN : FREE_ORIGIN;
+  const url = engine.provider === "ai" ? modelEndpoint(settings) : engine.provider === "baidu" ? BAIDU_ORIGIN : engine.provider === "libre-local" ? LIBRE_LOCAL_ORIGIN : engine.provider === "google" ? GOOGLE_TRANSLATE_ORIGIN : engine.provider === "google-web" ? GOOGLE_WEB_ORIGIN : engine.provider === "youdao" ? YOUDAO_ORIGIN : engine.provider === "microsoft" ? MICROSOFT_ORIGIN : FREE_ORIGIN;
   const cacheInput = {version: 4, engine, texts: entries.map(entry => entry.text)};
   if (engine.provider === "ai") Object.assign(cacheInput, {
     provider: providerName(settings), endpoint: url, model: settings.model, source: settings.source,
@@ -236,10 +238,10 @@ async function translationWithCache(entries, context, force = false, forceAi = f
   let translations;
   let reviewed = false;
   let reviewWarning = "";
-  if (["mymemory", "google-web", "google", "youdao", "microsoft", "libre-local"].includes(engine.provider)) {
+  if (["mymemory", "google-web", "google", "youdao", "microsoft", "libre-local", "baidu"].includes(engine.provider)) {
     try {
       if (!await chrome.permissions.contains({origins: [url]})) throw new Error("Translation provider host access is not granted.");
-      translations = engine.provider === "libre-local" ? await translateLibreLocal(pendingEntries, engine) : engine.provider === "microsoft" ? await translateMicrosoft(pendingEntries, engine, settings.microsoftKey, settings.microsoftRegion) : engine.provider === "youdao" ? await translateYoudao(pendingEntries, engine, settings.youdaoAppKey, settings.youdaoAppSecret) : engine.provider === "google" ? await translateGoogle(pendingEntries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWeb(pendingEntries, engine) : await translateFree(pendingEntries, engine);
+      translations = engine.provider === "baidu" ? await translateBaidu(pendingEntries, engine, settings.baiduAppId, settings.baiduAppSecret) : engine.provider === "libre-local" ? await translateLibreLocal(pendingEntries, engine) : engine.provider === "microsoft" ? await translateMicrosoft(pendingEntries, engine, settings.microsoftKey, settings.microsoftRegion) : engine.provider === "youdao" ? await translateYoudao(pendingEntries, engine, settings.youdaoAppKey, settings.youdaoAppSecret) : engine.provider === "google" ? await translateGoogle(pendingEntries, engine, settings.googleTranslateKey) : engine.provider === "google-web" ? await translateGoogleWeb(pendingEntries, engine) : await translateFree(pendingEntries, engine);
     } catch (error) {
       if (error.fatal !== false) error.fatal = true;
       throw error;
@@ -270,7 +272,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 18};
+      return {protocol: 19};
     }
     if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       if (!sender.tab || sender.frameId !== 0 || !isKaggleNotebook(sender.tab.url)) throw new Error("Invalid notebook viewport sender.");
