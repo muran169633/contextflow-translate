@@ -32,12 +32,12 @@ async function quickLocale() {
 async function ensureQuickPage(tabId, language) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0}); } catch {}
-  if (ping?.ok && ping.protocol !== 23) throw new Error(translate(language, "refreshPage"));
+  if (ping?.ok && ping.protocol !== 24) throw new Error(translate(language, "refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId}, files: ["content.js"]});
     ping = await chrome.tabs.sendMessage(tabId, {type: "CF_PING"}, {frameId: 0});
-    if (!ping?.ok || ping.protocol !== 23) throw new Error(translate(language, "refreshPage"));
+    if (!ping?.ok || ping.protocol !== 24) throw new Error(translate(language, "refreshPage"));
   }
   await chrome.tabs.sendMessage(tabId, {type: "CF_QUICK_SHOW", preferences: {messages: contentMessages(language)}}, {frameId: 0});
   return ping;
@@ -71,6 +71,7 @@ async function quickTranslate(tab) {
       const frameMessage = {...message, preferences: {...message.preferences, viewport: view?.viewport || null}};
       const frame = await sendToKaggleNotebook(tab.id, frameMessage, true);
       if (frame.status !== "ok") throw new Error(translate(language, "kaggleFrameWarning"));
+      if (frame.started && !result.started) await chrome.tabs.sendMessage(tab.id, {type: "CF_QUICK_SYNC", active: true}, {frameId: 0});
       result.started ||= frame.started;
       result.found = (result.found || 0) + frame.found;
       result.truncated ||= frame.truncated;
@@ -83,6 +84,21 @@ async function quickTranslate(tab) {
   } finally {
     quickPending.delete(tab.id);
   }
+}
+
+async function quickClear(tab) {
+  if (!Number.isInteger(tab?.id) || (tab.url && !/^https?:\/\//.test(tab.url))) throw new Error("Open an ordinary HTTP or HTTPS page.");
+  const language = await quickLocale();
+  const result = await chrome.tabs.sendMessage(tab.id, {type: "CF_CLEAR"}, {frameId: 0});
+  if (!result?.ok) throw new Error(translate(language, "quickError"));
+  if (isKaggleNotebook(tab.url)) {
+    const frame = await sendToKaggleNotebook(tab.id, {type: "CF_CLEAR"}, false);
+    if (frame.status !== "ok") {
+      await chrome.tabs.sendMessage(tab.id, {type: "CF_QUICK_SYNC", active: true}, {frameId: 0});
+      throw new Error(translate(language, "kaggleFrameWarning"));
+    }
+  }
+  return {cleared: true};
 }
 
 async function toggleDisplay(tab) {
@@ -289,7 +305,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     if (message?.type === "CF_ENGINE_PROTOCOL") {
       if (sender.tab) throw new Error("Protocol check must originate from the extension.");
-      return {protocol: 23};
+      return {protocol: 24};
     }
     if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       if (!sender.tab || sender.frameId !== 0 || !isKaggleNotebook(sender.tab.url)) throw new Error("Invalid notebook viewport sender.");
@@ -300,6 +316,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === "CF_QUICK_START") {
       if (!sender.tab) throw new Error("Quick translation must originate from a webpage.");
       return await quickTranslate(sender.tab);
+    }
+    if (message?.type === "CF_QUICK_CLEAR") {
+      if (!sender.tab || (sender.frameId != null && sender.frameId !== 0)) throw new Error("Quick cancellation must originate from the top-level webpage.");
+      return await quickClear(sender.tab);
     }
     if (message?.type === "CF_TRANSLATE") {
       if (!sender.tab) throw new Error("Translation requests must originate from an active webpage.");

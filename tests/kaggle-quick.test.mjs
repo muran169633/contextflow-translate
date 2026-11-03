@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-let listener, commandListener, allowed=false, installed=false, displayMode='bilingual';
+let listener, commandListener, allowed=false, installed=false, displayMode='bilingual', topFound=1;
 const messages=[];
 const tab={id:3,url:'https://www.kaggle.com/code/somejoint/example/notebook',title:'Quantum Circuits | Kaggle'};
 const store={settings:{model:'',dynamic:true},translationEngine:{provider:'google-web',source:'en',target:'zh-CN'},uiLanguage:'zh-CN'};
@@ -10,12 +10,13 @@ globalThis.chrome={runtime:{id:'test',onMessage:{addListener:fn=>{listener=fn;}}
   permissions:{contains:async ({origins,permissions})=>permissions?.includes('webNavigation')?allowed:['https://translate.googleapis.com/*','https://fanyi-api.baidu.com/*'].includes(origins[0])},
   webNavigation:{getAllFrames:async()=>[{frameId:0,url:tab.url},{frameId:6,url:'https://www.kaggleusercontent.com/kf/123/__results__.html'}]},
   tabs:{sendMessage:async (_tab,message,options)=>{const frame=options?.frameId||0;messages.push({message,frame});
-    if(message.type==='CF_PING') {if(frame===6&&!installed)throw Error('not installed');return {ok:true,protocol:23,displayMode};}
+    if(message.type==='CF_PING') {if(frame===6&&!installed)throw Error('not installed');return {ok:true,protocol:24,displayMode};}
     if(message.type==='CF_QUICK_SHOW')return {ok:true};
     if(message.type==='CF_QUICK_NOTICE')return {ok:true};
     if(message.type==='CF_SET_DISPLAY'){if(frame===0)displayMode=message.mode;return {ok:true};}
     if(message.type==='CF_NOTEBOOK_VIEWPORT')return {ok:true,viewport:{top:50,bottom:500}};
-    if(message.type==='CF_START')return {ok:true,started:true,found:frame===6?4:1};
+    if(message.type==='CF_START')return {ok:true,started:frame===6||topFound>0,found:frame===6?4:topFound};
+    if(message.type==='CF_CLEAR'||message.type==='CF_QUICK_SYNC')return {ok:true};
     if(message.type==='CF_SET_VIEWPORT')return {ok:true};
     throw Error('unexpected');}},scripting:{insertCSS:async()=>{},executeScript:async()=>{installed=true;}}};
 await import('../background.js?kaggle-quick-test');
@@ -36,8 +37,30 @@ test('快捷翻译授权后启动正文并传递真实可见范围', async()=>{
   assert.equal(child.message.preferences.documentTitle,tab.title);
 });
 
+test('只有 Notebook 正文有内容时悬浮按钮也进入可取消状态', async()=>{
+  allowed=true; installed=true; topFound=0; messages.length=0;
+  const result=await call({type:'CF_QUICK_START'});
+  assert.equal(result.ok,true);
+  assert.ok(messages.some(item=>item.frame===0&&item.message.type==='CF_QUICK_SYNC'&&item.message.active));
+  topFound=1;
+});
+
+test('快捷取消同时清除外层和 Notebook 正文', async()=>{
+  allowed=true; installed=true; messages.length=0;
+  const result=await call({type:'CF_QUICK_CLEAR'});
+  assert.equal(result.ok,true);
+  assert.deepEqual(messages.filter(item=>item.message.type==='CF_CLEAR').map(item=>item.frame),[0,6]);
+});
+
+test('正文权限丢失时取消会提示并保留可重试状态', async()=>{
+  allowed=false; messages.length=0;
+  const result=await call({type:'CF_QUICK_CLEAR'});
+  assert.equal(result.ok,false);
+  assert.ok(messages.some(item=>item.message.type==='CF_QUICK_SYNC' && item.message.active));
+});
+
 test('滚动同步只接受当前 Kaggle 顶层页面消息', async()=>{
-  messages.length=0;
+  allowed=true; messages.length=0;
   const rejected=await call({type:'CF_NOTEBOOK_VIEWPORT',viewport:{top:5,bottom:10}},{id:'test',tab,frameId:6});
   assert.equal(rejected.ok,false);
   const accepted=await call({type:'CF_NOTEBOOK_VIEWPORT',viewport:{top:5,bottom:10}});

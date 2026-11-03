@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Let the floating translation button stop translation and remove the page's
+  translations on a second click, including Kaggle Notebook content frames.
 - Keep translations inside ordinary text blocks to prevent grid and nested
   flex layouts from squeezing them into narrow columns.
 - Added an optional MyMemory contact email for the provider's higher stated

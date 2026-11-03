@@ -112,7 +112,7 @@ async function communicate(type, preferences) {
   let ping;
   try { ping = await chrome.tabs.sendMessage(tab.id, {type: "CF_PING"}, {frameId: 0}); }
   catch {}
-  if (ping?.ok && ping.protocol !== 23) throw new Error(t("refreshPage"));
+  if (ping?.ok && ping.protocol !== 24) throw new Error(t("refreshPage"));
   if (!ping?.ok) {
     await chrome.scripting.insertCSS({target: {tabId: tab.id}, files: ["content.css"]});
     await chrome.scripting.executeScript({target: {tabId: tab.id}, files: ["content.js"]});
@@ -126,6 +126,12 @@ async function communicate(type, preferences) {
     frameMessage = {...message, preferences: {...message.preferences, viewport: view?.viewport || null}};
   }
   const frame = await sendToKaggleNotebook(tab.id, frameMessage, ["CF_START", "CF_CONTINUE"].includes(type));
+  if (["CF_START", "CF_CONTINUE"].includes(type) && frame.started && !result?.started) {
+    await chrome.tabs.sendMessage(tab.id, {type: "CF_QUICK_SYNC", active: true}, {frameId: 0});
+  }
+  if (type === "CF_CLEAR" && frame.status !== "ok") {
+    await chrome.tabs.sendMessage(tab.id, {type: "CF_QUICK_SYNC", active: true}, {frameId: 0});
+  }
   return {...result, notebookStatus: frame.status, found: (result?.found || 0) + frame.found,
     started: !!result?.started || frame.started, truncated: !!result?.truncated || frame.truncated};
 }
@@ -191,7 +197,7 @@ async function runAction(kind) {
       let protocol;
       try { protocol = await chrome.runtime.sendMessage({type: "CF_ENGINE_PROTOCOL"}); }
       catch { throw new Error(t("reloadExtension")); }
-      if (!protocol?.ok || protocol.protocol !== 23) throw new Error(t("reloadExtension"));
+      if (!protocol?.ok || protocol.protocol !== 24) throw new Error(t("reloadExtension"));
       await persistEngine(selectedEngine);
       status(t("starting"), "info");
       await quickSetup;

@@ -35,3 +35,35 @@ test('原文与双语切换不请求翻译，切换期间完成的译文也遵�
   listener({type:'CF_PING'}, {}, value => {result=value;});
   assert.equal(result.displayMode, 'bilingual');
 });
+
+test('清除后未完成的翻译和重试结果都不会重新出现在页面', async () => {
+  let listener, toast; const pending=[], rendered=[];
+  const source={tagName:'P',textContent:'A paragraph for testing cancellation.',isConnected:true,closest:()=>null,
+    querySelector:()=>null,getClientRects:()=>[1],insertAdjacentElement(_where,node){rendered.push(node);}};
+  function element(){
+    return {dataset:{},children:[],isConnected:true,classList:{add(){}},setAttribute(){},
+      append(...nodes){this.children.push(...nodes);},addEventListener(_event,fn){this.handler=fn;},remove(){this.isConnected=false;},
+      querySelector(selector){return selector==='button'?this.children[0].children[1]:this.children[1];}};
+  }
+  const document={title:'Test',body:{appendChild(node){toast=node;}},createElement:element,
+    querySelector:selector=>selector==='article'?{querySelectorAll:()=>[source]}:null,
+    querySelectorAll:selector=>selector==='.cf-translation'?rendered.filter(node=>node.isConnected):[],getElementById:()=>toast};
+  const chrome={runtime:{onMessage:{addListener:fn=>{listener=fn;}},sendMessage:()=>new Promise(resolve=>pending.push(resolve))}};
+  vm.runInNewContext(script,{document,chrome,getComputedStyle:()=>({visibility:'visible',display:'block'})});
+  const start=()=>listener({type:'CF_START',preferences:{engine:{provider:'mymemory',source:'en',target:'zh-CN'},messages:contentMessages('zh-CN')}},{},()=>{});
+  const clear=()=>listener({type:'CF_CLEAR'},{},()=>{});
+  start();
+  clear();
+  pending.shift()({ok:true,translations:{'cf-1':'迟到的译文'}});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(rendered.length,0);
+  start();
+  pending.shift()({ok:true,translations:{'cf-1':'译文'}});
+  await new Promise(resolve=>setImmediate(resolve));
+  const retry=rendered[0].children[0].children[1].handler();
+  clear();
+  pending.shift()({ok:true,translations:{'cf-1':'迟到的重试结果'}});
+  await retry;
+  assert.equal(rendered.length,1);
+  assert.equal(rendered[0].isConnected,false);
+});

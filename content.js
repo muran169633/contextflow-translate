@@ -6,7 +6,7 @@
   const MAX_INITIAL_BLOCKS = 300;
   const BLOCK_SELECTOR = "h1,h2,h3,h4,p,li,blockquote,figcaption,td,th,dd,dt";
   const SKIP_ANCESTORS = "nav,header,footer,aside,form,button,textarea,select,pre,code,script,style,svg,[role='navigation'],[role='menu'],[aria-hidden='true'],[contenteditable='true'],.cf-translation";
-  const state = {token: 0, running: false, stop: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", documentTitle: "", viewport: null, truncated: false, initialRemaining: 0, dynamic: false, dynamicDirty: false, maxBlocks: 50, displayMode: "bilingual"};
+  const state = {token: 0, running: false, stop: false, quickActive: false, done: 0, failed: 0, failureReason: "", total: 0, items: [], messages: {}, engine: null, target: "", documentTitle: "", viewport: null, truncated: false, initialRemaining: 0, dynamic: false, dynamicDirty: false, maxBlocks: 50, displayMode: "bilingual"};
   let observer, dynamicTimer, viewportTimer;
   let quickControl, quickTranslateButton, quickCloseButton;
   let quickPosition = null;
@@ -198,12 +198,18 @@
     if (quickPosition) moveQuickControl(quickPosition.left, quickPosition.top);
   });
 
+  function updateQuickControl() {
+    if (!quickTranslateButton?.isConnected) return;
+    quickTranslateButton.textContent = uiText(state.quickActive ? "quickCancel" : "quickTranslate");
+    quickTranslateButton.title = `${uiText(state.quickActive ? "quickCancelTitle" : "quickTranslateTitle")} · ${uiText("quickMove")}`;
+    quickTranslateButton.setAttribute("aria-label", quickTranslateButton.title);
+    quickTranslateButton.setAttribute("aria-pressed", String(state.quickActive));
+  }
+
   function showQuickControl(messages) {
     state.messages = {...state.messages, ...(messages || {})};
     if (quickControl?.isConnected) {
-      quickTranslateButton.textContent = uiText("quickTranslate");
-      quickTranslateButton.title = `${uiText("quickTranslateTitle")} · ${uiText("quickMove")}`;
-      quickTranslateButton.setAttribute("aria-label", quickTranslateButton.title);
+      updateQuickControl();
       quickCloseButton.title = uiText("quickClose");
       quickCloseButton.setAttribute("aria-label", uiText("quickClose"));
       return;
@@ -272,10 +278,12 @@
       // Page scripts can see the button but cannot initiate a translation on the user's behalf.
       if (!event.isTrusted || translate.disabled) return;
       translate.disabled = true;
-      showToast(uiText("quickStarting"));
+      const cancel = state.quickActive;
+      showToast(uiText(cancel ? "quickCancelling" : "quickStarting"));
       try {
-        const result = await chrome.runtime.sendMessage({type: "CF_QUICK_START"});
+        const result = await chrome.runtime.sendMessage({type: cancel ? "CF_QUICK_CLEAR" : "CF_QUICK_START"});
         if (!result?.ok) showToast(result?.error || uiText("quickError"), "warn");
+        else if (cancel) showToast(uiText("quickCleared"), "done");
       } catch (error) {
         showToast(String(error?.message || error), "warn");
       } finally {
@@ -284,6 +292,7 @@
     });
     quickControl.append(translate, close);
     document.body.appendChild(quickControl);
+    updateQuickControl();
     if (quickPosition) moveQuickControl(quickPosition.left, quickPosition.top);
   }
 
@@ -395,6 +404,8 @@
       const {items, truncated} = getParagraphs(background ? Math.min(state.maxBlocks, state.initialRemaining) : state.maxBlocks, unchanged);
       const entries = background ? items : items.filter(item => item.visible);
       if (!entries.length) return;
+      state.quickActive = true;
+      updateQuickControl();
       const replaced = new Set(entries.map(item => item.element));
       for (const item of entries) previousByElement.get(item.element)?.translatedNode?.remove();
       state.items = [...previous.filter(item => !replaced.has(item.element)), ...entries];
@@ -440,6 +451,7 @@
 
   async function retryParagraph(item, node) {
     if (!node?.isConnected) return;
+    const token = state.token;
     const body = node.querySelector(".cf-translation-body");
     const button = node.querySelector("button");
     button.disabled = true;
@@ -451,10 +463,11 @@
         opening: item.text, before: "", after: ""
       };
       const result = await translateGroup([item], context, true);
-      if (!result) return;
+      if (!result || state.token !== token || !node.isConnected) return;
       renderTranslation(item, result.translations[item.id]);
       item.completed = true;
     } catch (error) {
+      if (state.token !== token || !node.isConnected) return;
       renderTranslation(item, uiText("requestFailed", {error: String(error.message || error)}), {failed: true});
       item.completed = false;
     }
@@ -627,6 +640,8 @@
     state.initialRemaining = MAX_INITIAL_BLOCKS - entries.length;
     state.total = entries.length;
     state.items = continuing ? [...completed, ...entries] : entries;
+    state.quickActive = !!state.items.length || (continuing && state.quickActive);
+    updateQuickControl();
     if (preferences?.dynamic === true) startDynamic();
     if (!entries.length) {
       state.running = false;
@@ -646,7 +661,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 23, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 24, running: state.running, count: state.total, displayMode: state.displayMode});
     } else if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       sendResponse({ok: true, viewport: notebookViewport()});
     } else if (message?.type === "CF_SET_VIEWPORT") {
@@ -668,6 +683,10 @@
       state.messages = {...state.messages, ...(message.preferences?.messages || {})};
       showToast(String(message.text || ""), message.kind === "info" ? "info" : "warn");
       sendResponse({ok: true});
+    } else if (message?.type === "CF_QUICK_SYNC") {
+      state.quickActive = message.active === true;
+      updateQuickControl();
+      sendResponse({ok: true});
     } else if (message?.type === "CF_START") {
       sendResponse({ok: true, ...startTranslation(message.preferences)});
     } else if (message?.type === "CF_CONTINUE") {
@@ -683,7 +702,9 @@
       state.stop = true;
       state.token++;
       state.running = false;
+      state.quickActive = false;
       clearTranslations();
+      updateQuickControl();
       sendResponse({ok: true, cleared: true});
     }
   });
