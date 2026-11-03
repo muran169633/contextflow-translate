@@ -12,10 +12,10 @@ test('弹窗说明已设置邮箱，但不向网页脚本传递邮箱', async()=
   Object.defineProperty(globalThis,'navigator',{configurable:true,value:{language:'zh-CN'}});
   globalThis.chrome={storage:{local:{get:async key=>({[key]:store[key]}),set:async data=>Object.assign(store,data)}},
     permissions:{request:async()=>true},tabs:{query:async()=>[{id:1,url:'https://example.com/'}],sendMessage:async(_tab,message)=>{
-      if(message.type==='CF_PING')return {ok:true,protocol:22};
+      if(message.type==='CF_PING')return {ok:true,protocol:23};
       if(message.type==='CF_START'){start=message;return {ok:true,started:true,found:1};}
       return {ok:true};
-    }},scripting:{},runtime:{sendMessage:async()=>({ok:true,protocol:22})}};
+    }},scripting:{},runtime:{sendMessage:async()=>({ok:true,protocol:23})}};
   try{
     await import('../popup.js?mymemory-email-test');
     await new Promise(resolve=>setImmediate(resolve));

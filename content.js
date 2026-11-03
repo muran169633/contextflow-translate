@@ -296,11 +296,19 @@
     if (["LI", "TD", "TH", "DD", "DT"].includes(source.tagName)) {
       source.appendChild(translation);
     } else {
-      // 横向 flex 容器会把译文当成并列项目，导致标题被挤成竖排。
+      // 把普通文本块的译文留在块内，避免成为外层 grid / flex 的新列。
+      const display = getComputedStyle(source).display;
+      if (["block", "flow-root", "list-item"].includes(display) &&
+          !source.closest("a,button") && typeof source.appendChild === "function") {
+        source.appendChild(translation);
+        return;
+      }
+      // 不能放进原文时，绕开横向 flex 和 grid，避免译文被挤入额外列。
       let anchor = source;
       while (anchor.parentElement && anchor.parentElement !== document.body) {
         const parentStyle = getComputedStyle(anchor.parentElement);
-        if (!["flex", "inline-flex"].includes(parentStyle.display) || String(parentStyle.flexDirection || "row").startsWith("column")) break;
+        const horizontalFlex = ["flex", "inline-flex"].includes(parentStyle.display) && !String(parentStyle.flexDirection || "row").startsWith("column");
+        if (!horizontalFlex && !["grid", "inline-grid"].includes(parentStyle.display)) break;
         anchor = anchor.parentElement;
       }
       anchor.insertAdjacentElement("afterend", translation);
@@ -310,13 +318,13 @@
   function renderTranslation(item, text, {failed = false, notice = ""} = {}) {
     if (!item.element.isConnected) return;
     if (item.translatedNode?.isConnected) item.translatedNode.remove();
-    const box = document.createElement("div");
+    const box = document.createElement("span");
     box.className = ROOT_CLASS;
     box.setAttribute("data-contextflow-owned", "true");
     if (state.displayMode === "original") box.classList.add("cf-hidden");
     if (failed) box.classList.add("cf-error");
 
-    const toolbar = document.createElement("div");
+    const toolbar = document.createElement("span");
     toolbar.className = "cf-translation-toolbar";
     const label = document.createElement("span");
     label.textContent = failed ? uiText("translationFailed") : uiText("translationLabel");
@@ -327,7 +335,7 @@
     retry.addEventListener("click", () => retryParagraph(item, box));
     toolbar.append(label, retry);
 
-    const body = document.createElement("div");
+    const body = document.createElement("span");
     body.className = "cf-translation-body";
     body.textContent = text;
     box.append(toolbar, body);
@@ -638,7 +646,7 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === "CF_PING") {
-      sendResponse({ok: true, protocol: 22, running: state.running, count: state.total, displayMode: state.displayMode});
+      sendResponse({ok: true, protocol: 23, running: state.running, count: state.total, displayMode: state.displayMode});
     } else if (message?.type === "CF_NOTEBOOK_VIEWPORT") {
       sendResponse({ok: true, viewport: notebookViewport()});
     } else if (message?.type === "CF_SET_VIEWPORT") {

@@ -14,6 +14,9 @@
   font-size: 0.92em !important;
   line-height: 1.65 !important;
   font-weight: 400 !important;
+  writing-mode: horizontal-tb !important;
+  word-break: normal !important;
+  max-width: 100% !important;
 }
 .cf-translation-toolbar {
   display: flex !important;
@@ -44,6 +47,8 @@
   font: inherit !important;
   color: inherit !important;
   letter-spacing: normal !important;
+  writing-mode: horizontal-tb !important;
+  word-break: normal !important;
   overflow-wrap: anywhere !important;
   white-space: pre-wrap !important;
 }

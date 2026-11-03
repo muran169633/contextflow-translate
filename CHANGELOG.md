@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep translations inside ordinary text blocks to prevent grid and nested
+  flex layouts from squeezing them into narrow columns.
 - Added an optional MyMemory contact email for the provider's higher stated
   free allowance, with disclosure and anonymous mode when left blank.
 - Continue through already loaded content in bounded batches without requiring
