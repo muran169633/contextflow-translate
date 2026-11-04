@@ -103,3 +103,95 @@ hr { border: 0; border-top: 1px solid #e6e9f2; margin: 20px 0; }
 .popup-bottom .field { flex: 1; margin: 0; }
 .settings-link { border: 0; background: none; color: #5264b7; padding: 8px 0; font-size: 11px; font-weight: 700; }
 .popup-footer { display: flex; justify-content: space-between; gap: 8px; padding: 15px 2px 0; color: #9aa5b7; font-size: 9px; }
+
+/* Popup visual system. Scoped to the popup so the settings page stays unchanged. */
+.popup-body {
+  color: #172440;
+  background: #eef1f8;
+}
+.popup-body .popup-header {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 18px 22px 30px;
+  border: 0;
+  background: linear-gradient(122deg, #15265a 0%, #233d97 58%, #5266e8 120%);
+  color: #fff;
+}
+.popup-body .popup-brand { position: relative; z-index: 1; gap: 10px; }
+.popup-body .popup-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #ffffff40;
+  border-radius: 12px;
+  background: #ffffff1a;
+  box-shadow: inset 0 1px 0 #ffffff38;
+  font-size: 15px;
+  letter-spacing: -.05em;
+}
+.popup-body .popup-logo span { color: #bfcaff; }
+.popup-body .popup-brand h1 { color: #fff; font-size: 17px; letter-spacing: -.035em; }
+.popup-body .popup-kicker { color: #c0cdf8; font-size: 10px; }
+.header-hero { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; margin-top: 19px; }
+.header-hero p { margin: 0; max-width: 250px; color: #f6f8ff; font-size: 17px; font-weight: 750; letter-spacing: .01em; }
+.hero-rule { width: 20px; height: 2px; flex: none; border-radius: 9px; background: #9baeff; }
+.header-art { position: absolute; right: 28px; bottom: -32px; width: 126px; height: 126px; border: 1px solid #ffffff30; border-radius: 50%; transform: rotate(-18deg); }
+.header-art::before, .header-art::after { content: ""; position: absolute; border: 1px solid #ffffff30; border-radius: 50%; }
+.header-art::before { inset: 12px; }
+.header-art::after { inset: 29px; background: #ffffff0d; }
+.header-art span, .header-art i { position: absolute; z-index: 1; display: grid; place-items: center; width: 33px; height: 33px; border: 1px solid #ffffff66; border-radius: 11px; font-style: normal; font-weight: 750; }
+.header-art span { top: 19px; left: 25px; background: #a6b6ff; color: #203477; font-size: 15px; }
+.header-art i { top: 56px; left: 60px; background: #ffffff20; color: white; font-size: 17px; }
+.popup-body .popup-main { position: relative; margin-top: -12px; padding: 0 12px 14px; }
+.popup-body .popup-card { padding: 15px; margin-bottom: 10px; border: 1px solid #dfe5f1; border-radius: 16px; box-shadow: 0 7px 23px #1e306c0d, 0 1px 3px #1e306c08; }
+.popup-body .card-heading { gap: 10px; margin-bottom: 13px; }
+.popup-body .card-heading strong { color: #172440; font-size: 14px; letter-spacing: -.01em; }
+.popup-body .card-heading p { margin-top: 3px; color: #7886a0; font-size: 10px; }
+.popup-body .section-icon { width: 35px; height: 35px; border-radius: 11px; background: #edf0ff; color: #4c60dd; font-size: 20px; }
+.popup-body .section-icon.peach { background: #fff0e7; color: #dc865e; }
+.heading-number { margin-left: auto; align-self: flex-start; padding-top: 2px; color: #aab5c9; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.popup-body .popup-card .field { gap: 5px; margin-bottom: 10px; }
+.popup-body .popup-card .field label, .popup-body .popup-bottom .field label { color: #64748d; font-size: 11px; font-weight: 750; }
+.popup-body .popup-card .field select, .popup-body .popup-bottom .field select { min-height: 38px; padding: 8px 10px; border: 1px solid #dbe3f0; border-radius: 9px; background: #f8faff; color: #223253; font-size: 12px; }
+.popup-body .popup-card .field select:focus, .popup-body .popup-bottom .field select:focus { border-color: #6578e8; box-shadow: 0 0 0 3px #6578e825; }
+.popup-body .language-pair { gap: 6px; }
+.popup-body .pair-arrow { margin-bottom: 10px; width: 29px; height: 38px; border: 1px solid #e3e8f3; border-radius: 9px; background: #fff; color: #586ed0; }
+.popup-body .pair-arrow:hover { background: #eff2ff; }
+.popup-body .provider-note { gap: 7px; color: #51627f; font-size: 11px; line-height: 1.5; }
+.popup-body .note-dot { background: #45b988; }
+.popup-body .provider-privacy { color: #667590; font-size: 11px; line-height: 1.5; }
+.popup-body .provider-details summary, .popup-body .provider-link { color: #5065ba; font-size: 11px; }
+.popup-body .popup-primary {
+  justify-content: flex-start;
+  min-height: 44px;
+  margin-top: 13px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(100deg, #4458ce, #6571ec);
+  box-shadow: 0 7px 16px #4c5fd23d;
+  color: #fff;
+  font-size: 13px;
+}
+.popup-body .popup-primary:hover { background: linear-gradient(100deg, #394bc0, #5964dd); }
+.popup-body .primary-spark { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 7px; background: #ffffff24; font-size: 14px; }
+.popup-body .popup-primary .button-arrow { font-size: 15px; opacity: .9; }
+.popup-body .popup-main .message { margin: 8px 0 0; padding: 8px 10px; border: 1px solid #e3e9f7; border-radius: 9px; background: #f4f7ff; color: #526687; font-size: 11px; }
+.popup-body .popup-main .message.error { border-color: #f7d9d2; background: #fff0ed; color: #96382e; }
+.popup-body .popup-main .message.success { border-color: #ccebdc; background: #e6f5ee; color: #1b6b4f; }
+.popup-body .display-label { margin-top: 13px; color: #64748d; }
+.popup-body .display-switch { margin-top: 6px; padding: 3px; background: #edf1f8; }
+.popup-body .display-option { min-height: 32px; color: #697993; }
+.popup-body .display-option[aria-pressed="true"] { color: #4259d3; box-shadow: 0 2px 7px #28386418; }
+.popup-body #continue { min-height: 36px; margin-top: 8px; color: #5366b0; font-size: 11px; }
+.popup-body .tools-card .card-heading { margin-bottom: 11px; }
+.popup-body .tool-button { min-height: 40px; border-color: #dfe5f1; background: #f9faff; }
+.popup-body .tools-card .two .button { border-color: #e1e7f2; color: #566680; }
+.popup-body .popup-bottom { padding: 3px 3px 0; }
+.popup-body .settings-link { min-height: 38px; padding: 0 13px; border: 1px solid #dce3f0; border-radius: 9px; background: #fff; color: #465bb3; }
+.popup-body .settings-link:hover { background: #f6f8ff; }
+.popup-body button:focus-visible, .popup-body summary:focus-visible { outline: 2px solid #7789fa; outline-offset: 2px; }
+.popup-body .popup-footer { padding-top: 14px; color: #8392aa; }

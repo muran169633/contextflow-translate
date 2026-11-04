@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Refreshed the translation popup with a more prominent reading header,
+  clearer controls, and an updated screenshot in the illustrated guide.
 - Let the floating translation button stop translation and remove the page's
   translations on a second click, including Kaggle Notebook content frames.
 - Keep translations inside ordinary text blocks to prevent grid and nested

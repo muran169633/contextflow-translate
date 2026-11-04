@@ -8,12 +8,13 @@
 </head>
 <body class="popup-body">
   <header class="popup-header">
-    <div class="popup-brand"><div class="popup-logo">C<span>F</span></div><div><h1>ContextFlow</h1><div class="popup-kicker" data-i18n="popupSubtitle">Bilingual translator</div></div></div>
-    <div class="header-mark">✦</div>
+    <div class="popup-brand"><div class="popup-logo" aria-hidden="true">C<span>F</span></div><div><h1>ContextFlow</h1><div class="popup-kicker" data-i18n="popupSubtitle">Bilingual translator</div></div></div>
+    <div class="header-hero"><span class="hero-rule" aria-hidden="true"></span><p data-i18n="workspace">Your reading companion</p></div>
+    <div class="header-art" aria-hidden="true"><span>文</span><i>A</i></div>
   </header>
   <main class="popup-main">
     <section class="popup-card" aria-label="Translation">
-      <div class="card-heading"><div class="section-icon">↗</div><div><strong data-i18n="engineTitle">Translation engine</strong><p data-i18n="engineSubtitle">Choose how to translate</p></div></div>
+      <div class="card-heading"><div class="section-icon" aria-hidden="true">✳</div><div><strong data-i18n="engineTitle">Translation engine</strong><p data-i18n="engineSubtitle">Choose how to translate</p></div><span class="heading-number" aria-hidden="true">01</span></div>
       <div class="field"><label for="provider" data-i18n="provider">Provider</label><select id="provider" disabled><option value="mymemory" data-i18n="freeProvider">MyMemory · free</option><option value="google-web" data-i18n="googleWebProvider">Google Translate · free (unofficial)</option><option value="baidu" data-i18n="baiduProvider">Baidu Translate</option><option value="libre-local" data-i18n="libreProvider">LibreTranslate · local</option><option value="google">Google Cloud Translation</option><option value="youdao" data-i18n="youdaoProvider">Youdao Cloud Translation</option><option value="microsoft" data-i18n="microsoftProvider">Microsoft Translator</option><option value="ai" data-i18n="aiProvider">Your AI model</option></select></div>
       <div id="free-controls">
         <div class="language-pair"><div class="field"><label for="freeSource" data-i18n="source">Source language</label><select id="freeSource" disabled></select></div><button type="button" class="pair-arrow" id="swapLanguages" disabled><span aria-hidden="true">⇄</span><span class="sr-only" data-i18n="swapLanguages">Swap languages</span></button><div class="field"><label for="freeTarget" data-i18n="target">Target language</label><select id="freeTarget" disabled></select></div></div>
@@ -54,19 +55,19 @@
       </div>
       <div id="ai-controls" hidden><div class="model-line"><span data-i18n="activeModel">Active AI model</span><strong id="model" data-i18n="loading">Loading…</strong><span id="detail"></span></div><p class="provider-privacy" data-i18n="aiNote">Configure your model and endpoint in Settings.</p></div>
       <p class="provider-privacy" id="kaggleInfo" data-i18n="kaggleAccess" hidden></p>
+      <button type="button" class="button primary popup-primary" id="start" disabled><span class="primary-spark" aria-hidden="true">✦</span><span data-i18n="start">Translate page</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+      <div id="message" class="message" role="status" data-i18n="popupHint">Page content is not sent until you click Translate.</div>
       <div class="display-label" id="display-label" data-i18n="displayMode">Page display</div>
       <div class="display-switch" role="group" aria-labelledby="display-label">
         <button type="button" class="display-option" id="mode-bilingual" aria-pressed="true" data-i18n="displayBilingual">Bilingual</button>
         <button type="button" class="display-option" id="mode-original" aria-pressed="false" data-i18n="displayOriginal">Original</button>
       </div>
       <p class="provider-privacy" data-i18n="displayShortcut">Alt+Shift+Y switches the display; customize it in browser extension shortcuts.</p>
-      <button type="button" class="button primary popup-primary" id="start" disabled><span>✦</span><span data-i18n="start">Translate page</span><span class="button-arrow">↗</span></button>
-      <div id="message" class="message" role="status" data-i18n="popupHint">Page content is not sent until you click Translate.</div>
       <p class="provider-privacy" id="dynamicInfo"></p>
       <button type="button" class="button" id="continue" data-i18n="continueTranslation" disabled>Translate new or unfinished content</button>
     </section>
     <section class="popup-card tools-card">
-      <div class="card-heading"><div class="section-icon peach">≡</div><div><strong data-i18n="toolsTitle">Page tools</strong><p data-i18n="toolsSubtitle">Keep what matters</p></div></div>
+      <div class="card-heading"><div class="section-icon peach" aria-hidden="true">≡</div><div><strong data-i18n="toolsTitle">Page tools</strong><p data-i18n="toolsSubtitle">Keep what matters</p></div><span class="heading-number" aria-hidden="true">02</span></div>
       <button type="button" class="button tool-button" id="copy-discussion"><span class="tool-glyph">▤</span><span data-i18n="copy">Copy discussion</span><span class="button-arrow">↗</span></button>
       <div class="two"><button type="button" class="button" id="stop" data-i18n="stop">Stop</button><button type="button" class="button" id="clear" data-i18n="clear">Remove translations</button></div>
     </section>
