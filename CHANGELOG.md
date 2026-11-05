@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Moved no-key and locally hosted free translation options to the top of the
+  provider list, followed by services that offer free quotas.
 - Refreshed the translation popup with a more prominent reading header,
   clearer controls, and an updated screenshot in the illustrated guide.
 - Let the floating translation button stop translation and remove the page's

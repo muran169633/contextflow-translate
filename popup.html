@@ -15,7 +15,16 @@
   <main class="popup-main">
     <section class="popup-card" aria-label="Translation">
       <div class="card-heading"><div class="section-icon" aria-hidden="true">✳</div><div><strong data-i18n="engineTitle">Translation engine</strong><p data-i18n="engineSubtitle">Choose how to translate</p></div><span class="heading-number" aria-hidden="true">01</span></div>
-      <div class="field"><label for="provider" data-i18n="provider">Provider</label><select id="provider" disabled><option value="mymemory" data-i18n="freeProvider">MyMemory · free</option><option value="google-web" data-i18n="googleWebProvider">Google Translate · free (unofficial)</option><option value="baidu" data-i18n="baiduProvider">Baidu Translate</option><option value="libre-local" data-i18n="libreProvider">LibreTranslate · local</option><option value="google">Google Cloud Translation</option><option value="youdao" data-i18n="youdaoProvider">Youdao Cloud Translation</option><option value="microsoft" data-i18n="microsoftProvider">Microsoft Translator</option><option value="ai" data-i18n="aiProvider">Your AI model</option></select></div>
+      <div class="field"><label for="provider" data-i18n="provider">Provider</label><select id="provider" disabled>
+        <option value="google-web" data-i18n="googleWebProvider">Google Translate · free (unofficial)</option>
+        <option value="mymemory" data-i18n="freeProvider">MyMemory · free</option>
+        <option value="libre-local" data-i18n="libreProvider">LibreTranslate · local</option>
+        <option value="baidu" data-i18n="baiduProvider">Baidu Translate</option>
+        <option value="microsoft" data-i18n="microsoftProvider">Microsoft Translator</option>
+        <option value="google">Google Cloud Translation</option>
+        <option value="youdao" data-i18n="youdaoProvider">Youdao Cloud Translation</option>
+        <option value="ai" data-i18n="aiProvider">Your AI model</option>
+      </select></div>
       <div id="free-controls">
         <div class="language-pair"><div class="field"><label for="freeSource" data-i18n="source">Source language</label><select id="freeSource" disabled></select></div><button type="button" class="pair-arrow" id="swapLanguages" disabled><span aria-hidden="true">⇄</span><span class="sr-only" data-i18n="swapLanguages">Swap languages</span></button><div class="field"><label for="freeTarget" data-i18n="target">Target language</label><select id="freeTarget" disabled></select></div></div>
         <p class="provider-privacy" id="autoSourceInfo" data-i18n="autoSourceNote" hidden></p>
